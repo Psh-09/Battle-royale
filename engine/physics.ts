@@ -15,7 +15,8 @@ export function moveFighters(gs: GameState, cbs: GameCallbacks, dt: number): voi
     if (c.hitCd > 0)     c.hitCd     -= dt;
     if (c.flash > 0)     c.flash     -= dt;
     if (c.abilityCd > 0) c.abilityCd -= dt;
-    if (c.slowed > 0) c.slowed -= dt;
+    if (c.slowed > 0)    c.slowed    -= dt;
+    if (c.wallDmgT > 0)  c.wallDmgT  -= dt; // 서든데스 벽 데미지 개별 쿨타임
     if (c.phantom > 0) {
       c.phantom -= dt; c.invul = 9_999; c.flash = 0;
       if (c.phantom <= 0) { c.phantom = 0; c.phantomReady = true; c.invul = 0; }
@@ -84,21 +85,15 @@ export function moveFighters(gs: GameState, cbs: GameCallbacks, dt: number): voi
     if (c.y-r<m)     {c.y=m+r;     c.vy=Math.abs(c.vy);  c.kbVy=Math.abs(c.kbVy);  wallHit=true;}
     if (c.y+r>F-m)   {c.y=F-m-r;   c.vy=-Math.abs(c.vy); c.kbVy=-Math.abs(c.kbVy); wallHit=true;}
 
-    // 서든데스 벽 데미지: 500ms마다 고정 5 데미지 틱
-    if (gs.suddenDeath && m > 4) {
-      const near = c.x < m + r + 2 || c.x > F - m - r - 2 || c.y < m + r + 2 || c.y > F - m - r - 2;
-      if (near) {
-        c.flash = Math.max(c.flash, 40);
-        c.wallDmgT += dt;
-        if (c.wallDmgT >= 500) {
-          c.wallDmgT -= 500;
-          c.hp = Math.max(0, c.hp - 5);
-          addFloatText(gs, c.x, c.y - r - 4, '-5🔴', '#ff4400', 9);
-          if (c.hp <= 0 && !c.dead) killFighter(gs, cbs, c, null);
-        }
-      } else {
-        c.wallDmgT = 0;
-      }
+    // ── 서든데스 벽 데미지: wallHit 기반, 개인별 2초 쿨타임 ──────
+    // 기존 500ms 누적 방식은 캐릭터가 벽에서 1프레임만 접촉하므로 동작 불가
+    // → wallHit 플래그로 즉시 트리거 + 2초 개인 쿨타임으로 재설계
+    if (gs.suddenDeath && wallHit && m > 0 && c.wallDmgT <= 0 && !c.dead) {
+      c.wallDmgT = 2_000; // 2초 개인 쿨타임
+      c.flash = Math.max(c.flash, 280);
+      dotDmg(gs, cbs, null, c, 5);
+      spawnMiniParticles(gs, c.x, c.y, '#ff4400', 12);
+      addFloatText(gs, c.x, c.y - r - 4, '-5🔴', '#ff4400', 10);
     }
 
     if (wallHit && c.kbT > 0 && c.thrownCount > 0) {

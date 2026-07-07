@@ -52,15 +52,15 @@ export const ABILITY_DEFS: AbilityDef[] = [
   },
   // ── 충돌 발동형 (collision) — 쿨타임 2초 ─────────────────────
   {
-    id: 8,  name: '잡아던지기',  emoji: '🤼',  type: 'collision', cd: 2_000, color: '#ff8866',
-    desc: '충돌 시 적을 던져 벽에 3회 튕기며 피해 (던지는 동안 시전자도 경직)',
+    id: 8,  name: '잡아던지기',  emoji: '🤼',  type: 'collision', cd: 3_000, color: '#ff8866',
+    desc: '충돌 시 적을 던져 벽에 3회 튕기며 피해 (쿨타임 3초)',
     params: { damage: [28, 28], wallBounces: 3, knockbackMult: 0 },
     maxHp: 310,
   },
   {
     id: 9,  name: '각성 강타',   emoji: '🐲',  type: 'collision', cd: 2_000, color: '#ff4400',
-    desc: '충돌 피해; HP 40% ↓ → 각성으로 능력치 강화 + 외형 변화',
-    params: { damage: [27, 48], knockbackMult: 1.0 },
+    desc: '충돌 피해; HP 40% ↓ → 각성+쿨타임 0.5s·데미지 ×1.35',
+    params: { damage: [37, 65], knockbackMult: 1.0 }, // ×1.35 버프 적용
     maxHp: 280,
   },
   {
@@ -76,9 +76,9 @@ export const ABILITY_DEFS: AbilityDef[] = [
     maxHp: 380,
   },
   {
-    id: 12, name: '흡혈 타격',   emoji: '🩸',  type: 'collision', cd: 2_000, color: '#cc0044',
-    desc: '충돌 시 적 HP를 흡수 (피해의 70% 회복)',
-    params: { damage: [36, 49], knockbackMult: 0.8, lifeStealRatio: 0.70 },
+    id: 12, name: '흡혈 타격',   emoji: '🩸',  type: 'collision', cd: 1_000, color: '#cc0044',
+    desc: '충돌 시 적 HP를 흡수 (피해의 70% 회복, 쿨타임 1초)',
+    params: { damage: [43, 59], knockbackMult: 0.8, lifeStealRatio: 0.70 }, // ×1.2 버프
     maxHp: 250,
   },
   {

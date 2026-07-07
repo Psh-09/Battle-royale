@@ -34,12 +34,9 @@ export function ab_throw(gs:GameState,cbs:GameCallbacks,att:Fighter,def:Fighter)
 
 export function ab_awaken(gs:GameState,cbs:GameCallbacks,att:Fighter,def:Fighter):void{
   const s=sc(gs),ab=getAbility(9);
-  att.abilityCd=ab.cd;
-  if(!att.awakenTriggered&&att.hp/att.maxHp<=0.40){
-    att.awaken=true;att.awakenTriggered=true;att.speed*=1.45;att.vx*=1.45;att.vy*=1.45;
-    addFloatText(gs,att.x,att.y-gs.baseR*s-12,'🐲 각성!!!','#ff4400',17);
-    spawnParticles(gs,att.x,att.y,35);
-  }
+  // 각성 상태: 쿨타임 0.5초 고정 / 미각성: 일반 쿨타임
+  // 각성 발동 체크는 rawDmg/dotDmg 내 checkAwakening()에서 처리됨
+  att.abilityCd = att.awaken ? 500 : ab.cd;
   const[dMin,dMax]=ab.params.damage!;
   const dmg=att.awaken?(dMax+rnd(15)):(dMin+rnd(dMax-dMin+1));
   rawDmg(gs,cbs,att,def,dmg,ab.params.knockbackMult!);
