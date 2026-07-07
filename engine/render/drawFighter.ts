@@ -11,9 +11,25 @@ export function drawFighter(ctx:CanvasRenderingContext2D,gs:GameState,f:Fighter)
   ctx.save(); ctx.translate(f.x,f.y);
 
   if(f.awaken){
-    const t=Date.now()/800;
-    ctx.beginPath();ctx.arc(0,0,r*1.6,0,Math.PI*2);ctx.strokeStyle=`rgba(255,80,0,${.5+.3*Math.sin(t*5)})`;ctx.lineWidth=4*s;ctx.stroke();
-    ctx.beginPath();ctx.arc(0,0,r*1.9,0,Math.PI*2);ctx.strokeStyle=`rgba(255,180,0,${.3+.2*Math.sin(t*7+1)})`;ctx.lineWidth=2*s;ctx.stroke();
+    const t=Date.now()/600; // 더 빠른 펄스
+    // 3겹 오라 링
+    ctx.beginPath();ctx.arc(0,0,r*1.3,0,Math.PI*2);
+    ctx.strokeStyle=`rgba(255,20,0,${.7+.25*Math.sin(t*8)})`;ctx.lineWidth=5*s;ctx.stroke();
+    ctx.beginPath();ctx.arc(0,0,r*1.6,0,Math.PI*2);
+    ctx.strokeStyle=`rgba(255,80,0,${.55+.25*Math.sin(t*5)})`;ctx.lineWidth=3.5*s;ctx.stroke();
+    ctx.beginPath();ctx.arc(0,0,r*2.0,0,Math.PI*2);
+    ctx.strokeStyle=`rgba(255,200,0,${.3+.15*Math.sin(t*3+1)})`;ctx.lineWidth=2*s;ctx.stroke();
+    // 👑 왕관 (머리 위)
+    ctx.font=`${r*.85}px serif`;ctx.textAlign='center';ctx.textBaseline='bottom';
+    ctx.shadowColor='#ff4400';ctx.shadowBlur=10*s;
+    ctx.fillStyle='#fff';ctx.fillText('👑',0,-r-2*s);ctx.shadowBlur=0;
+    // 빨간 눈 효과
+    if(!fl){
+      ctx.fillStyle='#ff1100';ctx.shadowColor='#ff0000';ctx.shadowBlur=6*s;
+      ctx.beginPath();ctx.arc(-r*.28,-r*.12,3.5*s,0,Math.PI*2);ctx.fill();
+      ctx.beginPath();ctx.arc( r*.28,-r*.12,3.5*s,0,Math.PI*2);ctx.fill();
+      ctx.shadowBlur=0;
+    }
   }
   if(f.stunned>0){
     const t=Date.now()/80; ctx.fillStyle='#ffee00';
@@ -45,8 +61,9 @@ export function drawFighter(ctx:CanvasRenderingContext2D,gs:GameState,f:Fighter)
   ctx.beginPath();ctx.arc(0,0,r+9*s,0,Math.PI*2);ctx.fillStyle=gr;ctx.fill();
 
   ctx.beginPath();ctx.arc(0,0,r,0,Math.PI*2);
-  ctx.fillStyle=fl?'#ffffff22':'#0e1420';ctx.fill();
-  ctx.lineWidth=3.2*s;ctx.strokeStyle=fl?'#fff':f.awaken?'#ff6600':f.color;ctx.stroke();
+  // 각성 시 어두운 붉은 배경 → 각성 전후 한눈에 구분
+  ctx.fillStyle=fl?'#ffffff22':f.awaken?'#1a0300':'#0e1420';ctx.fill();
+  ctx.lineWidth=3.2*s;ctx.strokeStyle=fl?'#fff':f.awaken?'#ff1100':f.color;ctx.stroke();
 
   if(f.imageEl&&f.imageEl.complete){
     ctx.save();ctx.beginPath();ctx.arc(0,0,r-2*s,0,Math.PI*2);ctx.clip();

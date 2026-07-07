@@ -22,11 +22,13 @@ function spawnCrater(gs:GameState,cx:number,cy:number):void{
 
 export function ab_throw(gs:GameState,cbs:GameCallbacks,att:Fighter,def:Fighter):void{
   const s=sc(gs);
-  att.abilityCd=500;
+  att.abilityCd=2_000;
   rawDmg(gs,cbs,att,def,20,0); if(def.dead) return;
   def.isGrabbed=true;def.grabbedTimer=1_000;def.grabber=att;def.invul=9_999;
   def.kbVx=0;def.kbVy=0;def.kbT=0;
   def.thrownCount=3;def.thrownDmg=35;def.landingDmg=55;def.thrower=att;def.hasLanded=false;
+  // 시전자도 1초 경직 (들어올리는 연출 중 둘 다 정지)
+  att.kbT=1_000; att.kbVx=0; att.kbVy=0;
   addFloatText(gs,att.x,att.y-gs.baseR*s-6,'🤼 잡아 올려!',att.color,14); sfx('throw');
 }
 
@@ -74,7 +76,7 @@ export function ab_vampiric(gs:GameState,cbs:GameCallbacks,att:Fighter,def:Fight
 export function ab_chainLightning(gs:GameState,cbs:GameCallbacks,att:Fighter,firstDef:Fighter):void{
   const s=sc(gs),ab=getAbility(13);
   att.abilityCd=ab.cd;
-  const dmgLevels=[30,20,12];
+  const dmgLevels=[38,25,15]; // ×1.25 of [30,20,12]
   const pts:Array<{x:number;y:number}>=[{x:att.x,y:att.y}];
   const hit=new Set<Fighter>([att]);
   let cur:Fighter|null=firstDef;

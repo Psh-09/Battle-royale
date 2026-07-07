@@ -77,6 +77,7 @@ export interface Fighter {
   slowMult: number;        // speed multiplier while slowed (0.0-1.0)
   phantom: number;         // ms remaining for phantom phase (환영의 역습)
   phantomReady: boolean;   // true when phantom phase just ended → fire burst
+  wallDmgT: number;        // 서든데스 벽 데미지 틱 타이머 ms
 }
 
 export interface Particle {

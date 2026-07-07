@@ -9,6 +9,7 @@ import HpRail from '@/components/HpRail/index';
 import GameControls from '@/components/GameControls/index';
 import WinnerOverlay from '@/components/WinnerOverlay/index';
 import EliminationToast from '@/components/EliminationToast/index';
+import AbilityInfoModal from '@/components/AbilityInfoModal/index';
 import { useGameSync } from '@/hooks/useGameSync';
 
 function fmt(ms:number){const s=Math.floor(ms/1000);return`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;}
@@ -22,6 +23,7 @@ export default function Home() {
   const [eliminations, setEliminations] = useState<EliminationEntry[]>([]);
   const [winner, setWinner] = useState<Fighter | null>(null);
   const [gameKey, setGameKey] = useState(0);
+  const [tooltipFighter, setTooltipFighter] = useState<Fighter | null>(null);
 
   const arenaRef = useRef<ArenaCanvasHandle>(null);
   const snap = useGameSync(arenaRef);
@@ -62,12 +64,13 @@ export default function Home() {
         <span className="text-gray-500 text-sm">생존 <span className="text-green-400 font-bold">{aliveCount}</span> / {fighters.length}</span>
       </div>
       <div className="relative w-full max-w-2xl">
-        <ArenaCanvas key={gameKey} ref={arenaRef} fighters={fighters} isPaused={isPaused} speedMult={speedMult} onElimination={handleElimination} onGameOver={handleGameOver}/>
+        <ArenaCanvas key={gameKey} ref={arenaRef} fighters={fighters} isPaused={isPaused} speedMult={speedMult} onElimination={handleElimination} onGameOver={handleGameOver} onFighterClick={setTooltipFighter}/>
         {screen==='results'&&<WinnerOverlay winner={winner} elapsed={snap.elapsed} eliminations={eliminations} onRestart={handleRestart} onNewRoster={handleNewRoster}/>}
       </div>
       <div className="w-full max-w-2xl"><HpRail fighters={displayFighters}/></div>
       <div className="w-full max-w-2xl"><GameControls isPaused={isPaused} speedMult={speedMult} aliveCount={aliveCount} totalCount={fighters.length} onPause={()=>setIsPaused(true)} onResume={()=>setIsPaused(false)} onRestart={handleRestart} onNewRoster={handleNewRoster} onSpeedChange={setSpeedMult}/></div>
       <EliminationToast eliminations={eliminations}/>
+      <AbilityInfoModal fighter={tooltipFighter} onClose={()=>setTooltipFighter(null)}/>
     </main>
   );
 }

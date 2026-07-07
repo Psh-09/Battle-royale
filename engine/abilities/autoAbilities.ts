@@ -9,7 +9,7 @@ const sc=(gs:GameState)=>gs.fieldSize/500;
 const rnd=(n:number)=>Math.floor(Math.random()*n);
 
 export function ab_laser(gs:GameState,cbs:GameCallbacks,c:Fighter):void {
-  const s=sc(gs),r=gs.baseR*s,BEAMS=12;
+  const s=sc(gs),r=gs.baseR*s,BEAMS=20; // 기존 12의 1.7배
   const lines:LaserLine[]=[]; const hitSet=new Set<Fighter>();
   for(let li=0;li<BEAMS;li++){
     const baseAng=(li/BEAMS)*Math.PI*2+(Math.random()-.5)*.18;

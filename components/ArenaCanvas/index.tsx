@@ -16,10 +16,11 @@ interface ArenaCanvasProps {
   speedMult: number;
   onElimination: (entry: EliminationEntry) => void;
   onGameOver: (winner: Fighter | null) => void;
+  onFighterClick?: (fighter: Fighter) => void;
 }
 
 const ArenaCanvas = forwardRef<ArenaCanvasHandle, ArenaCanvasProps>(function ArenaCanvas(
-  { fighters, isPaused, speedMult, onElimination, onGameOver }, ref
+  { fighters, isPaused, speedMult, onElimination, onGameOver, onFighterClick }, ref
 ) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const gsRef = useRef<GameState | null>(null);
@@ -77,7 +78,24 @@ const ArenaCanvas = forwardRef<ArenaCanvasHandle, ArenaCanvasProps>(function Are
       },160);
     };
     window.addEventListener('resize',onResize);
-    return () => { cancelAnimationFrame(rafRef.current); window.removeEventListener('resize',onResize); };
+
+    // 캔버스 클릭 → 능력 정보 팝업
+    const handleClick = (e: MouseEvent) => {
+      const gs = gsRef.current; if (!gs || !onFighterClick) return;
+      const rect = canvas.getBoundingClientRect();
+      const cx = (e.clientX - rect.left) * (gs.fieldSize / rect.width);
+      const cy = (e.clientY - rect.top)  * (gs.fieldSize / rect.height);
+      const r2 = gs.baseR * (gs.fieldSize / 500);
+      const hit = gs.fighters.find(f => !f.dead && Math.hypot(f.x-cx, f.y-cy) < r2 * 1.6);
+      if (hit) onFighterClick({ ...hit });
+    };
+    canvas.addEventListener('click', handleClick);
+
+    return () => {
+      cancelAnimationFrame(rafRef.current);
+      window.removeEventListener('resize',onResize);
+      canvas.removeEventListener('click', handleClick);
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fighters]);
 

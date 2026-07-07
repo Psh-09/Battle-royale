@@ -71,13 +71,20 @@ export function moveFighters(gs: GameState, cbs: GameCallbacks, dt: number): voi
     if (c.y-r<m)     {c.y=m+r;     c.vy=Math.abs(c.vy);  c.kbVy=Math.abs(c.kbVy);  wallHit=true;}
     if (c.y+r>F-m)   {c.y=F-m-r;   c.vy=-Math.abs(c.vy); c.kbVy=-Math.abs(c.kbVy); wallHit=true;}
 
-    // 서든데스 벽 데미지: 수축 경계 가까이 있으면 지속 피해
+    // 서든데스 벽 데미지: 500ms마다 고정 5 데미지 틱
     if (gs.suddenDeath && m > 4) {
       const near = c.x < m + r + 2 || c.x > F - m - r - 2 || c.y < m + r + 2 || c.y > F - m - r - 2;
       if (near) {
-        c.hp = Math.max(0, c.hp - 22 * dt / 1_000);
         c.flash = Math.max(c.flash, 40);
-        if (c.hp <= 0 && !c.dead) killFighter(gs, cbs, c, null);
+        c.wallDmgT += dt;
+        if (c.wallDmgT >= 500) {
+          c.wallDmgT -= 500;
+          c.hp = Math.max(0, c.hp - 5);
+          addFloatText(gs, c.x, c.y - r - 4, '-5🔴', '#ff4400', 9);
+          if (c.hp <= 0 && !c.dead) killFighter(gs, cbs, c, null);
+        }
+      } else {
+        c.wallDmgT = 0;
       }
     }
 
