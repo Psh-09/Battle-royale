@@ -65,7 +65,7 @@ export default function Home() {
       </div>
       <div className="relative w-full max-w-2xl">
         <ArenaCanvas key={gameKey} ref={arenaRef} fighters={fighters} isPaused={isPaused} speedMult={speedMult} onElimination={handleElimination} onGameOver={handleGameOver} onFighterClick={setTooltipFighter}/>
-        {screen==='results'&&<WinnerOverlay winner={winner} elapsed={snap.elapsed} eliminations={eliminations} onRestart={handleRestart} onNewRoster={handleNewRoster}/>}
+        {screen==='results'&&<WinnerOverlay winner={winner} elapsed={snap.elapsed} eliminations={eliminations} fighters={displayFighters} onRestart={handleRestart} onNewRoster={handleNewRoster}/>}
       </div>
       <div className="w-full max-w-2xl"><HpRail fighters={displayFighters}/></div>
       <div className="w-full max-w-2xl"><GameControls isPaused={isPaused} speedMult={speedMult} aliveCount={aliveCount} totalCount={fighters.length} onPause={()=>setIsPaused(true)} onResume={()=>setIsPaused(false)} onRestart={handleRestart} onNewRoster={handleNewRoster} onSpeedChange={setSpeedMult}/></div>

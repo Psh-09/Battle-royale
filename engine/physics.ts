@@ -1,6 +1,6 @@
 import type { Fighter, GameState, GameCallbacks } from '@/types';
 import { ABILITY_DEFS } from '@/data/abilityDefs';
-import { rawDmg, killFighter } from './combat';
+import { rawDmg, killFighter, dotDmg } from './combat';
 import { spawnParticles, spawnMiniParticles, addFloatText } from './particles';
 import { sfx } from './audio';
 
@@ -40,6 +40,19 @@ export function moveFighters(gs: GameState, cbs: GameCallbacks, dt: number): voi
       continue;
     }
 
+    // ── 최후의 저항 (각성강타 1회용 5초 무적) ────────────────────
+    if (c.lastStandActive) {
+      c.hp = 1;
+      c.invul = 9_999; // 매 프레임 갱신 → 사실상 무적
+      c.lastStandTimer -= dt;
+      if (c.lastStandTimer <= 0) {
+        c.lastStandActive = false;
+        c.invul = 0;
+        c.flash = 400;
+        addFloatText(gs, c.x, c.y - gs.baseR*s - 6, '🐲 저항 종료', '#aaa', 11);
+      }
+    }
+
     if (c.invul > 0)   c.invul   -= dt;
     if (c.stunned > 0) c.stunned -= dt;
 
@@ -47,8 +60,8 @@ export function moveFighters(gs: GameState, cbs: GameCallbacks, dt: number): voi
       c.poisonTimer -= dt; c.poisonTickT += dt;
       if (c.poisonTickT >= 500) {
         c.poisonTickT -= 500;
-        c.hp = Math.max(0, c.hp - c.poisonDmg);
-        if (c.hp <= 0 && !c.dead) killFighter(gs, cbs, c, c.poisonCaster);
+        dotDmg(gs, cbs, c.poisonCaster, c, c.poisonDmg); // DOT 경로 통일
+        addFloatText(gs, c.x, c.y - r - 4, `-${c.poisonDmg}☠️`, '#55ee66', 9);
       }
       if (c.poisonTimer <= 0) c.poisonTickT = 0;
     }

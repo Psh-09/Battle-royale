@@ -17,8 +17,8 @@ export const ABILITY_DEFS: AbilityDef[] = [
   {
     id: 3,  name: '독 안개',     emoji: '☠️', type: 'auto', cd: 13_500, color: '#44cc55',
     desc: '독성 구름 — 접촉 적에게 지속 피해',
-    params: { dotDamage: 8, dotDuration: 3_200, aoeRadius: 72 },
-    maxHp: 470,
+    params: { dotDamage: 8, dotDuration: 3_200, aoeRadius: 144 }, // 범위 ×2
+    maxHp: 430, // 범위 2배 버프 반영
   },
   {
     id: 4,  name: '회오리',      emoji: '🌪️', type: 'auto', cd: 16_000, color: '#88ccff',
@@ -47,8 +47,8 @@ export const ABILITY_DEFS: AbilityDef[] = [
   {
     id: 15, name: '전기장',      emoji: '🌐',  type: 'auto', cd: 15_000, color: '#ffee00',
     desc: '팽창하는 전기장이 접촉 모든 적 피해',
-    params: { damage: [22, 30], aoeRadius: 120, knockbackMult: 0.6 },
-    maxHp: 450,
+    params: { damage: [22, 30], aoeRadius: 180, knockbackMult: 0.6 }, // 범위 ×1.5
+    maxHp: 420, // 범위 1.5배 버프 반영
   },
   // ── 충돌 발동형 (collision) — 쿨타임 2초 ─────────────────────
   {
@@ -95,8 +95,8 @@ export const ABILITY_DEFS: AbilityDef[] = [
   },
   // ── 신규 능력 (IDs 16-25) — CD ×0.85 적용 ──────────────────
   { id:16, name:'벌집 지뢰',   emoji:'🐝', type:'auto', cd:13_000, color:'#ffaa00',
-    desc:'설치 지점 범위 내 모든 적에게 3.5초간 지속 피해', maxHp:420,
-    params:{ dotDamage:10, aoeRadius:65 } },
+    desc:'설치 지점 범위 내 모든 적에게 5초간 지속 피해 (범위 ×1.5)', maxHp:380,
+    params:{ dotDamage:10, aoeRadius:97 } }, // 범위 ×1.5, 지속 5s, HP 버프 반영
   { id:17, name:'환영의 역습', emoji:'🌀', type:'auto', cd:21_000, color:'#cc88ff',
     desc:'1.5초 무적+잔상 후 근처 적에게 연속 투사체 3발', maxHp:260,
     params:{ damage:[45,65], projectileCount:3, knockbackMult:0.8 } },
@@ -116,11 +116,11 @@ export const ABILITY_DEFS: AbilityDef[] = [
     desc:'넓은 범위에 10발의 투사체가 쏟아짐 (중복 피격 가능)', maxHp:300,
     params:{ damage:[40,55], projectileCount:10, knockbackMult:0.6 } },
   { id:23, name:'그림자 결박', emoji:'🕸️', type:'auto', cd:14_000, color:'#442266',
-    desc:'근처 적을 사슬로 묶어 1.5초 감속+도트 피해', maxHp:350,
-    params:{ dotDamage:8, stunDuration:1_500 } },
+    desc:'근처 적을 사슬로 묶어 3초 감속+도트 피해 (지속 ×2)', maxHp:310,
+    params:{ dotDamage:8, stunDuration:3_000 } }, // 지속 ×2, HP 버프 반영
   { id:24, name:'지뢰 매설',   emoji:'💥', type:'auto', cd:15_000, color:'#887700',
-    desc:'현재 위치에 지뢰 설치, 1.5초 후 자동 폭발', maxHp:420,
-    params:{ damage:[65,80], aoeRadius:70 } },
+    desc:'랜덤 3곳에 지뢰 투척 — 접근 즉시 또는 1.5초 후 자동 폭발 (범위 ×1.3)', maxHp:360,
+    params:{ damage:[65,80], aoeRadius:91 } }, // 3개 투척+범위 ×1.3, HP 버프 반영
   { id:25, name:'관통 사격',   emoji:'🔫', type:'auto', cd:12_000, color:'#ffcc00',
     desc:'이동 방향으로 즉발 관통 사격 — 경로 내 모든 적 피해', maxHp:400,
     params:{ damage:[42,55], knockbackMult:0.4 } },

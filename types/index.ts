@@ -78,6 +78,10 @@ export interface Fighter {
   phantom: number;         // ms remaining for phantom phase (환영의 역습)
   phantomReady: boolean;   // true when phantom phase just ended → fire burst
   wallDmgT: number;        // 서든데스 벽 데미지 틱 타이머 ms
+  totalDamageDealt: number; // 경기 중 누적 딜량 (결과 화면 표시)
+  lastStandUsed: boolean;   // 각성강타 최후 저항 1회용 사용 여부
+  lastStandActive: boolean; // 최후 저항 발동 중 (5초 무적)
+  lastStandTimer: number;   // 최후 저항 남은 시간 ms
 }
 
 export interface Particle {

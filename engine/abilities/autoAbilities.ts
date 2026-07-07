@@ -111,7 +111,8 @@ export function ab_electricField(gs:GameState,cbs:GameCallbacks,c:Fighter):void 
 // ── 16: 벌집 지뢰 ────────────────────────────────────────────
 export function ab_hive(gs:GameState,_cbs:GameCallbacks,c:Fighter):void {
   const s=sc(gs),r=gs.baseR*s,ab=getAbility(16);
-  gs.effects.push({type:'hive',x:c.x,y:c.y,r:(ab.params.aoeRadius??65)*s,color:'#ffaa00',caster:c,hitCds:{},life:3_500,maxLife:3_500});
+  // 버프: 지속 5초, 범위 1.5배 (aoeRadius 97)
+  gs.effects.push({type:'hive',x:c.x,y:c.y,r:(ab.params.aoeRadius??97)*s,color:'#ffaa00',caster:c,hitCds:{},life:5_000,maxLife:5_000});
   addFloatText(gs,c.x,c.y-r-6,'🐝 벌집 지뢰!','#ffaa00',14);
 }
 
@@ -220,14 +221,21 @@ export function ab_shadowbind(gs:GameState,_cbs:GameCallbacks,c:Fighter):void {
   sfx('elec');
 }
 
-// ── 24: 지뢰 매설 ─────────────────────────────────────────────
+// ── 24: 지뢰 매설 (개편: 랜덤 3곳 투척, 근접 즉시/1.5초 자동 폭발) ──
 export function ab_mine(gs:GameState,_cbs:GameCallbacks,c:Fighter):void {
   const s=sc(gs),r=gs.baseR*s,ab=getAbility(24);
   const[dMin,dMax]=ab.params.damage!;
-  gs.effects.push({type:'mine',x:c.x,y:c.y,r:(ab.params.aoeRadius??70)*s,
-    life:1_500,maxLife:1_500,color:'#887700',caster:c,
-    dmg:dMin+rnd(dMax-dMin+1),exploded:false});
-  addFloatText(gs,c.x,c.y-r-6,'💥 지뢰 매설!','#887700',13);
+  const mineR=(ab.params.aoeRadius??91)*s; // 70 × 1.3 = 91
+  for(let i=0;i<3;i++){
+    const ang=Math.random()*Math.PI*2;
+    const dist=(70+Math.random()*160)*s;
+    const mx=Math.max(mineR+5,Math.min(gs.fieldSize-mineR-5, c.x+Math.cos(ang)*dist));
+    const my=Math.max(mineR+5,Math.min(gs.fieldSize-mineR-5, c.y+Math.sin(ang)*dist));
+    gs.effects.push({type:'mine',x:mx,y:my,r:mineR,
+      life:1_500,maxLife:1_500,color:'#887700',caster:c,
+      dmg:dMin+rnd(dMax-dMin+1),exploded:false});
+  }
+  addFloatText(gs,c.x,c.y-r-6,'💥 지뢰 매설! ×3','#887700',13);
 }
 
 // ── 25: 관통 사격 ─────────────────────────────────────────────

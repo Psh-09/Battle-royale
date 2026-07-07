@@ -10,6 +10,19 @@ export function drawFighter(ctx:CanvasRenderingContext2D,gs:GameState,f:Fighter)
   const ab=ABILITY_DEFS.find(a=>a.id===f.abilityId);
   ctx.save(); ctx.translate(f.x,f.y);
 
+  // 최후의 저항 비주얼 (황금 맥동 링)
+  if(f.lastStandActive){
+    const t=Date.now()/150;
+    for(let ri=0;ri<2;ri++){
+      ctx.beginPath();ctx.arc(0,0,r*(2.2+ri*.4),0,Math.PI*2);
+      ctx.strokeStyle=`rgba(255,220,0,${.7-.25*ri+.25*Math.sin(t*(8-ri*2))})`;
+      ctx.lineWidth=(5-ri*2)*s;ctx.stroke();
+    }
+    // 황금 텍스트 오라
+    ctx.font=`${r*.6}px serif`;ctx.textAlign='center';ctx.textBaseline='bottom';
+    ctx.shadowColor='#ffdd00';ctx.shadowBlur=12*s;
+    ctx.fillStyle='#ffdd00';ctx.fillText('⚡',r*.7,-r-.5*s);ctx.shadowBlur=0;
+  }
   if(f.awaken){
     const t=Date.now()/600; // 더 빠른 펄스
     // 3겹 오라 링
