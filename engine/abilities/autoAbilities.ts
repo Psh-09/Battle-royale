@@ -65,7 +65,8 @@ export function ab_ultimate(gs:GameState,cbs:GameCallbacks,c:Fighter):void {
   let nearest=alive[0],md=Infinity;
   for(const v of alive){const d=Math.hypot(v.x-c.x,v.y-c.y);if(d<md){md=d;nearest=v;}}
   nearest.invul=0;
-  rawDmg(gs,cbs,c,nearest,150,2.8);
+  const ab5=getAbility(5);
+  rawDmg(gs,cbs,c,nearest,ab5.params.damage![0],ab5.params.knockbackMult!);
   gs.effects.push({type:'ultimate',x:c.x,y:c.y,tx:nearest.x,ty:nearest.y,color:c.color,life:900,maxLife:900});
   spawnParticles(gs,nearest.x,nearest.y,55);
   addFloatText(gs,c.x,c.y-gs.baseR*s-8,'💀 필살기!!!','#ffffff',18); sfx('ult');

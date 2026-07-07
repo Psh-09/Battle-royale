@@ -15,7 +15,8 @@ export function createFighter(slot: RosterSlot, index: number, total: number, ab
   const spawnAng = (index/total)*Math.PI*2 - Math.PI/2;
   const moveAng = Math.random()*Math.PI*2;
   const baseSpd = (BASE_SPEED+(Math.random()-.5)*20)*s*speedMult;
-  const baseHp = 200+Math.floor((Math.random()-.5)*40);
+  // 능력 강도에 반비례하는 체력 — ab.maxHp가 없으면 기본 350
+  const baseHp = ab?.maxHp ?? 350;
   return {
     id:slot.id, name:slot.name, color:slot.color, imageEl,
     emoji:FALLBACK_EMOJIS[index%FALLBACK_EMOJIS.length],

@@ -22,6 +22,8 @@ export interface AbilityDef {
   color: string;
   desc: string;
   params: AbilityParams;
+  /** 능력 강도에 반비례하는 기본 최대 체력 */
+  maxHp: number;
 }
 
 export interface RosterSlot {

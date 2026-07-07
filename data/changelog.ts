@@ -7,6 +7,17 @@ export interface ChangeEntry {
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    version: '1.0.4',
+    date: '2026-07-07',
+    title: '능력별 HP 차등 시스템',
+    notes: [
+      '데미지 차등 패치(v1.0.3) 롤백 → 능력별 데미지 v1.0.1 상태로 복원',
+      '필살기 데미지 150 → 230',
+      '능력 강도에 반비례하는 최대 HP 차등 적용 (250~480)',
+      '최강 흡혈타격 250HP ↔ 최약 독안개 480HP',
+    ],
+  },
+  {
     version: '1.0.3',
     date: '2026-07-07',
     title: '밸런스 대규모 패치',
