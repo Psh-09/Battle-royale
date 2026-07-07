@@ -102,3 +102,24 @@ export function ab_shockwave(gs:GameState,cbs:GameCallbacks,att:Fighter,def:Figh
   spawnMiniParticles(gs,def.x,def.y,'#ffaa00',20);
   addFloatText(gs,att.x,att.y-gs.baseR*s-6,'💣 폭발 강타!',att.color,13); sfx('boom');
 }
+
+// ── 21: 균열 강타 ─────────────────────────────────────────────
+export function ab_rift(gs:GameState,cbs:GameCallbacks,att:Fighter,def:Fighter):void{
+  const s=sc(gs),ab=getAbility(21);
+  att.abilityCd=ab.cd;
+  rawDmg(gs,cbs,att,def,dmgR(ab),ab.params.knockbackMult!);
+  // Main crater
+  spawnCrater(gs,def.x,def.y);
+  // Extra smaller cracks at offset positions
+  const offsets=[[15*s,-10*s],[-12*s,14*s],[8*s,16*s]];
+  for(const[ox,oy] of offsets){
+    const lines:Array<[number,number,number,number,number,number]>=[];
+    for(let i=0;i<5;i++){
+      const a=Math.random()*Math.PI*2,len=(15+Math.random()*15)*s;
+      lines.push([def.x+ox,def.y+oy,def.x+ox+Math.cos(a)*len*0.4,def.y+oy+Math.sin(a)*len*0.4,def.x+ox+Math.cos(a)*len,def.y+oy+Math.sin(a)*len]);
+    }
+    gs.effects.push({type:'crater',cx:def.x+ox,cy:def.y+oy,lines,life:1_000,maxLife:1_000});
+  }
+  addFloatText(gs,att.x,att.y-gs.baseR*s-6,'⚡ 균열 강타!',att.color,13);
+  sfx('boom');
+}

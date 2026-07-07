@@ -73,6 +73,10 @@ export interface Fighter {
   poisonCaster: Fighter | null;
   awaken: boolean;
   awakenTriggered: boolean;
+  slowed: number;          // ms remaining for slow debuff
+  slowMult: number;        // speed multiplier while slowed (0.0-1.0)
+  phantom: number;         // ms remaining for phantom phase (환영의 역습)
+  phantomReady: boolean;   // true when phantom phase just ended → fire burst
 }
 
 export interface Particle {
@@ -102,14 +106,57 @@ export interface ChainEffect   { type: 'chain'; pts: Array<{x:number;y:number}>;
 export interface ElectricEffect { type: 'electric'; x: number; y: number; life: number; maxLife: number; }
 export interface UltimateEffect { type: 'ultimate'; x: number; y: number; tx: number; ty: number; color: string; life: number; maxLife: number; }
 
-export type GameEffect = LaserEffect | ExplosionEffect | CraterEffect | PoisonCloudEffect | ChainEffect | ElectricEffect | UltimateEffect;
+export interface HiveEffect {
+  type: 'hive';
+  x: number; y: number; r: number;
+  color: string; caster: Fighter;
+  hitCds: Record<string, number>;
+  life: number; maxLife: number;
+}
+export interface WaveEffect {
+  type: 'wave';
+  x: number; y: number;        // current wave center x
+  vx: number;                   // horizontal speed (positive=right, negative=left)
+  color: string; caster: Fighter;
+  hitSet: Record<string, boolean>;
+  life: number; maxLife: number;
+  dmg: number;
+}
+export interface ShadowBindEffect {
+  type: 'shadowbind';
+  casterId: string; targetId: string;
+  life: number; maxLife: number;
+  color: string;
+}
+export interface MineEffect {
+  type: 'mine';
+  x: number; y: number; r: number;
+  life: number; maxLife: number;
+  color: string; caster: Fighter; dmg: number;
+  exploded: boolean;
+}
+export interface PhantomDecoyEffect {
+  type: 'phantom_decoy';
+  x: number; y: number;
+  life: number; maxLife: number;
+  color: string; emoji: string;
+  isReal: boolean;
+}
 
-export type ProjectileKind = 'missile' | 'orb';
+export type GameEffect = LaserEffect | ExplosionEffect | CraterEffect | PoisonCloudEffect | ChainEffect | ElectricEffect | UltimateEffect | HiveEffect | WaveEffect | ShadowBindEffect | MineEffect | PhantomDecoyEffect;
+
+export type ProjectileKind = 'missile' | 'orb' | 'arc' | 'frost' | 'fall';
 
 export interface Projectile {
   x: number; y: number; vx: number; vy: number; r: number;
   dmg: number; color: string; caster: Fighter; life: number;
   kind: ProjectileKind; launched: boolean; orbAng: number; orbitTime: number;
+  gravity?: number;         // downward acceleration px/s² (arc/fall)
+  splashRadius?: number;    // explosion radius on impact
+  frosting?: number;        // slow duration ms on hit
+  arcTarget?: { x: number; y: number }; // target pos for arc projectile
+  hitIds?: Set<string>;     // already-hit fighter IDs (wave/arc)
+  fallFromTop?: boolean;    // barrage: spawned at top, falls down
 }
 
 export interface Tornado {

@@ -1,7 +1,7 @@
 import type { GameState, GameCallbacks } from '@/types';
 import { moveFighters, resolvePairCollisions } from './physics';
 import { checkAutoAbility, fireCollisionAbility } from './abilities/index';
-import { updateParticles, updateConfetti, updateFloatTexts } from './particles';
+import { updateParticles, updateConfetti, updateFloatTexts, addFloatText } from './particles';
 import { updateEffects } from './effects';
 import { updateProjectiles } from './projectiles';
 import { updateTornadoes } from './tornadoes';
@@ -40,6 +40,30 @@ export function stepGameState(gs: GameState, cbs: GameCallbacks, ts: number, spe
     for (const f of gs.fighters) if (!f.dead) checkAutoAbility(gs, cbs, f);
     moveFighters(gs, cbs, dt);
     resolvePairCollisions(gs, cbs, fireCollisionAbility);
+
+    // ── Phantom burst: fire projectiles when phantom phase ends ──
+    for (const f of gs.fighters) {
+      if (f.dead || !f.phantomReady) continue;
+      f.phantomReady = false;
+      const alive = gs.fighters.filter(ch => !ch.dead && ch !== f);
+      if (!alive.length) continue;
+      let nearest = alive[0]; let md = Infinity;
+      for (const v of alive) { const d=Math.hypot(v.x-f.x,v.y-f.y); if(d<md){md=d;nearest=v;} }
+      const sc2 = gs.fieldSize/500;
+      const baseAng = Math.atan2(nearest.y-f.y, nearest.x-f.x);
+      for (let pi=0; pi<3; pi++) {
+        const spread=(pi-1)*0.18;
+        gs.projectiles.push({
+          x:f.x,y:f.y,
+          vx:Math.cos(baseAng+spread)*300*sc2,
+          vy:Math.sin(baseAng+spread)*300*sc2,
+          r:8*sc2, dmg:45+Math.floor(Math.random()*20),
+          color:'#cc88ff', caster:f, life:3_000,
+          kind:'missile', launched:true, orbAng:0, orbitTime:0,
+        });
+      }
+      addFloatText(gs, f.x, f.y-gs.baseR*sc2-8, '💜 환영의 역습!', '#cc88ff', 15);
+    }
 
     // ── 속도 정규화: 탄성 충돌 후 vx/vy 크기 복원 ────────────────
     for (const f of gs.fighters) {

@@ -22,6 +22,18 @@ export function drawFighter(ctx:CanvasRenderingContext2D,gs:GameState,f:Fighter)
   if(f.poisonTimer>0){ctx.beginPath();ctx.arc(0,0,r*1.1,0,Math.PI*2);ctx.strokeStyle='rgba(50,200,80,.5)';ctx.lineWidth=3*s;ctx.stroke();}
   if(f.isGrabbed){ctx.beginPath();ctx.arc(0,0,r*1.3,0,Math.PI*2);ctx.strokeStyle=`rgba(255,200,0,${.5+.4*Math.sin(Date.now()/80)})`;ctx.lineWidth=3*s;ctx.stroke();}
 
+  // Frost/slow visual
+  if(f.slowed>0){
+    const frozenPulse=0.6+0.3*Math.sin(Date.now()/100);
+    ctx.beginPath();ctx.arc(0,0,r*1.15,0,Math.PI*2);
+    ctx.strokeStyle=`rgba(100,200,255,${frozenPulse})`;ctx.lineWidth=3*s;ctx.stroke();
+  }
+
+  // Phantom (near-invisible)
+  if(f.phantom>0){
+    ctx.globalAlpha=0.2;
+  }
+
   if(ab){
     const cdPct=Math.max(0,1-f.abilityCd/ab.cd);
     if(cdPct>=1){ctx.beginPath();ctx.arc(0,0,r+5*s,0,Math.PI*2);ctx.strokeStyle='#ffd70055';ctx.lineWidth=2*s;ctx.setLineDash([4*s,3*s]);ctx.stroke();ctx.setLineDash([]);}
@@ -45,6 +57,9 @@ export function drawFighter(ctx:CanvasRenderingContext2D,gs:GameState,f:Fighter)
   }
 
   if(ab){ctx.font=`${r*.48}px serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillStyle='#fff';ctx.fillText(ab.emoji,r*.7,-r*.7);}
+
+  // Reset alpha if it was set for phantom
+  if(f.phantom>0) ctx.globalAlpha=1;
 
   const bw=r*1.9,bh=5*s,bx=-bw/2,by=r+4*s;
   ctx.fillStyle='#111';ctx.fillRect(bx,by,bw,bh);

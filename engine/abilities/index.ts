@@ -1,7 +1,7 @@
 import type { Fighter, GameState, GameCallbacks } from '@/types';
 import { ABILITY_DEFS } from '@/data/abilityDefs';
-import { ab_laser,ab_missiles,ab_poison,ab_tornado,ab_ultimate,ab_orbs,ab_sniper,ab_electricField } from './autoAbilities';
-import { ab_throw,ab_awaken,ab_firecrash,ab_electric,ab_vampiric,ab_chainLightning,ab_shockwave } from './collisionAbilities';
+import { ab_laser,ab_missiles,ab_poison,ab_tornado,ab_ultimate,ab_orbs,ab_sniper,ab_electricField,ab_hive,ab_phantom,ab_wave,ab_arc,ab_frost,ab_barrage,ab_shadowbind,ab_mine,ab_pierce } from './autoAbilities';
+import { ab_throw,ab_awaken,ab_firecrash,ab_electric,ab_vampiric,ab_chainLightning,ab_shockwave,ab_rift } from './collisionAbilities';
 
 export function checkAutoAbility(gs: GameState, cbs: GameCallbacks, c: Fighter): void {
   const ab=ABILITY_DEFS.find(a=>a.id===c.abilityId);
@@ -24,6 +24,15 @@ function fireAutoAbility(gs: GameState, cbs: GameCallbacks, c: Fighter): void {
     case 6: ab_orbs(gs,cbs,c); break;
     case 7: ab_sniper(gs,cbs,c); break;
     case 15: ab_electricField(gs,cbs,c); break;
+    case 16: ab_hive(gs,cbs,c); break;
+    case 17: ab_phantom(gs,cbs,c); break;
+    case 18: ab_wave(gs,cbs,c); break;
+    case 19: ab_arc(gs,cbs,c); break;
+    case 20: ab_frost(gs,cbs,c); break;
+    case 22: ab_barrage(gs,cbs,c); break;
+    case 23: ab_shadowbind(gs,cbs,c); break;
+    case 24: ab_mine(gs,cbs,c); break;
+    case 25: ab_pierce(gs,cbs,c); break;
   }
 }
 
@@ -36,5 +45,6 @@ export function fireCollisionAbility(gs: GameState, cbs: GameCallbacks, att: Fig
     case 12: ab_vampiric(gs,cbs,att,def); break;
     case 13: ab_chainLightning(gs,cbs,att,def); break;
     case 14: ab_shockwave(gs,cbs,att,def); break;
+    case 21: ab_rift(gs,cbs,att,def); break;
   }
 }

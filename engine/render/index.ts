@@ -1,6 +1,6 @@
 import type { GameState } from '@/types';
 import { drawFighter } from './drawFighter';
-import { drawCraters,drawPoisonClouds,drawExplosions,drawTornadoEntities,drawLasers,drawUltimateBeams,drawChainLightning,drawElectricSparks,drawProjectileEntities } from './drawEffects';
+import { drawCraters,drawPoisonClouds,drawExplosions,drawTornadoEntities,drawLasers,drawUltimateBeams,drawChainLightning,drawElectricSparks,drawProjectileEntities,drawNewEffects } from './drawEffects';
 import { drawParticles,drawConfetti,drawFloatTexts } from './drawParticles';
 
 export function renderFrame(ctx:CanvasRenderingContext2D,gs:GameState):void{
@@ -15,6 +15,7 @@ export function renderFrame(ctx:CanvasRenderingContext2D,gs:GameState):void{
   for(const f of gs.fighters) drawFighter(ctx,gs,f);
   drawProjectileEntities(ctx,gs);
   drawLasers(ctx,gs); drawUltimateBeams(ctx,gs); drawChainLightning(ctx,gs); drawElectricSparks(ctx,gs);
+  drawNewEffects(ctx,gs);
   drawFloatTexts(ctx,gs); drawConfetti(ctx,gs);
 
   // 서든데스 경기장 수축 오버레이

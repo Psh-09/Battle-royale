@@ -15,6 +15,13 @@ export function moveFighters(gs: GameState, cbs: GameCallbacks, dt: number): voi
     if (c.hitCd > 0)     c.hitCd     -= dt;
     if (c.flash > 0)     c.flash     -= dt;
     if (c.abilityCd > 0) c.abilityCd -= dt;
+    if (c.slowed > 0) c.slowed -= dt;
+    if (c.phantom > 0) {
+      c.phantom -= dt; c.invul = 9_999; c.flash = 0;
+      if (c.phantom <= 0) { c.phantom = 0; c.phantomReady = true; c.invul = 0; }
+      // Skip rest of movement while in phantom
+      continue;
+    }
 
     if (c.isGrabbed) {
       c.invul = 9_999; c.flash = 60;
@@ -46,7 +53,7 @@ export function moveFighters(gs: GameState, cbs: GameCallbacks, dt: number): voi
       if (c.poisonTimer <= 0) c.poisonTickT = 0;
     }
 
-    const spdScale = c.stunned > 0 ? 0.22 : 1;
+    const spdScale = c.stunned > 0 ? 0.22 : c.slowed > 0 ? c.slowMult : 1;
     if (c.kbT > 0) {
       c.kbT -= dt;
       c.x += c.kbVx*ds; c.y += c.kbVy*ds;

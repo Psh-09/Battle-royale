@@ -127,3 +127,94 @@ export function drawProjectileEntities(ctx:CanvasRenderingContext2D,gs:GameState
     ctx.restore();
   }
 }
+
+export function drawNewEffects(ctx: CanvasRenderingContext2D, gs: GameState): void {
+  const s = gs.fieldSize / 500;
+
+  for (const e of gs.effects) {
+    const alpha = Math.max(0, e.life / e.maxLife);
+
+    // ── Hive ─────────────────────────────────────────────────────
+    if (e.type === 'hive') {
+      ctx.save(); ctx.globalAlpha = alpha * 0.6;
+      // Hexagonal glow
+      const gr = ctx.createRadialGradient(e.x,e.y,0,e.x,e.y,e.r);
+      gr.addColorStop(0,'rgba(255,170,0,0.8)'); gr.addColorStop(1,'rgba(255,170,0,0)');
+      ctx.beginPath(); ctx.arc(e.x,e.y,e.r,0,Math.PI*2); ctx.fillStyle=gr; ctx.fill();
+      // Border
+      ctx.strokeStyle='#ffaa00'; ctx.lineWidth=2*s; ctx.setLineDash([5*s,3*s]);
+      ctx.beginPath(); ctx.arc(e.x,e.y,e.r,0,Math.PI*2); ctx.stroke(); ctx.setLineDash([]);
+      // Emoji center
+      ctx.globalAlpha = alpha; ctx.font=`${12*s}px serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText('🐝',e.x,e.y);
+      ctx.restore();
+    }
+
+    // ── Wave ─────────────────────────────────────────────────────
+    if (e.type === 'wave') {
+      const ww = 28 * s;
+      ctx.save(); ctx.globalAlpha = alpha * 0.8;
+      // Wave band
+      const gr2 = ctx.createLinearGradient(e.x-ww,0,e.x+ww,0);
+      gr2.addColorStop(0,'transparent'); gr2.addColorStop(0.5,'rgba(0,136,255,0.7)'); gr2.addColorStop(1,'transparent');
+      ctx.fillStyle=gr2; ctx.fillRect(e.x-ww,0,ww*2,gs.fieldSize);
+      // Wave crest line
+      ctx.strokeStyle='rgba(150,220,255,0.9)'; ctx.lineWidth=3*s;
+      ctx.beginPath(); ctx.moveTo(e.x,0); ctx.lineTo(e.x,gs.fieldSize); ctx.stroke();
+      ctx.restore();
+    }
+
+    // ── Shadow bind chain ────────────────────────────────────────
+    if (e.type === 'shadowbind') {
+      const caster = gs.fighters.find(f=>f.id===e.casterId);
+      const target = gs.fighters.find(f=>f.id===e.targetId);
+      if (caster && target) {
+        ctx.save(); ctx.globalAlpha = alpha * 0.85;
+        // Draw chain
+        const dx=(target.x-caster.x)/6, dy=(target.y-caster.y)/6;
+        ctx.strokeStyle='#cc44ff'; ctx.lineWidth=2.5*s; ctx.lineCap='round';
+        ctx.setLineDash([6*s,4*s]);
+        ctx.shadowColor='#8800ff'; ctx.shadowBlur=8;
+        ctx.beginPath(); ctx.moveTo(caster.x,caster.y);
+        for(let seg=0;seg<6;seg++){
+          const mx=caster.x+dx*(seg+0.5)+(Math.random()-0.5)*8*s;
+          const my=caster.y+dy*(seg+0.5)+(Math.random()-0.5)*8*s;
+          ctx.lineTo(mx,my);
+        }
+        ctx.lineTo(target.x,target.y); ctx.stroke(); ctx.setLineDash([]);
+        ctx.restore();
+      }
+    }
+
+    // ── Mine ─────────────────────────────────────────────────────
+    if (e.type === 'mine' && !e.exploded) {
+      const fuseRatio = e.life / e.maxLife;
+      const blinkFast = fuseRatio < 0.3;
+      const visible = !blinkFast || Math.floor(Date.now()/80)%2===0;
+      if (visible) {
+        ctx.save(); ctx.globalAlpha = alpha;
+        ctx.beginPath(); ctx.arc(e.x,e.y,7*s,0,Math.PI*2);
+        ctx.fillStyle=fuseRatio>0.4?'#887700':'#ff4400';
+        ctx.shadowColor=ctx.fillStyle; ctx.shadowBlur=10;
+        ctx.fill();
+        ctx.strokeStyle='#ffcc00'; ctx.lineWidth=1.5*s; ctx.stroke();
+        // Fuse indicator (shrinking arc)
+        ctx.beginPath(); ctx.arc(e.x,e.y,10*s,-Math.PI/2,-Math.PI/2+fuseRatio*Math.PI*2);
+        ctx.strokeStyle='#ffff00'; ctx.lineWidth=2*s; ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    // ── Phantom decoy ────────────────────────────────────────────
+    if (e.type === 'phantom_decoy') {
+      ctx.save(); ctx.globalAlpha = alpha * 0.5;
+      const r2 = gs.baseR * s;
+      ctx.beginPath(); ctx.arc(e.x,e.y,r2,0,Math.PI*2);
+      ctx.fillStyle='#ffffff11'; ctx.fill();
+      ctx.strokeStyle=e.color; ctx.lineWidth=2*s; ctx.stroke();
+      ctx.font=`${r2*.8}px serif`; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillStyle='#fff'; ctx.fillText(e.emoji,e.x,e.y);
+      ctx.restore();
+    }
+  }
+}

@@ -34,6 +34,7 @@ export function createFighter(slot: RosterSlot, index: number, total: number, ab
     thrownCount:0,thrownDmg:0,landingDmg:0,hasLanded:false,thrower:null,
     poisonTimer:0,poisonDmg:0,poisonTickT:0,poisonCaster:null,
     awaken:false,awakenTriggered:false,
+    slowed:0, slowMult:1.0, phantom:0, phantomReady:false,
   };
 }
 

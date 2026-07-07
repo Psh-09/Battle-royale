@@ -107,3 +107,142 @@ export function ab_electricField(gs:GameState,cbs:GameCallbacks,c:Fighter):void 
   for(let i=0;i<6;i++){const ang=(i/6)*Math.PI*2;gs.effects.push({type:'electric',x:c.x+Math.cos(ang)*range*.7,y:c.y+Math.sin(ang)*range*.7,life:500,maxLife:500});}
   addFloatText(gs,c.x,c.y-r-6,'🌐 전기장!','#ffee00',14); sfx('elec');
 }
+
+// ── 16: 벌집 지뢰 ────────────────────────────────────────────
+export function ab_hive(gs:GameState,_cbs:GameCallbacks,c:Fighter):void {
+  const s=sc(gs),r=gs.baseR*s,ab=getAbility(16);
+  gs.effects.push({type:'hive',x:c.x,y:c.y,r:(ab.params.aoeRadius??65)*s,color:'#ffaa00',caster:c,hitCds:{},life:3_500,maxLife:3_500});
+  addFloatText(gs,c.x,c.y-r-6,'🐝 벌집 지뢰!','#ffaa00',14);
+}
+
+// ── 17: 환영의 역습 ───────────────────────────────────────────
+export function ab_phantom(gs:GameState,_cbs:GameCallbacks,c:Fighter):void {
+  const s=sc(gs),r=gs.baseR*s;
+  c.phantom=1_500; c.invul=9_999;
+  // Two decoy phantoms
+  for(let di=0;di<2;di++){
+    const off=(di===0?-1:1)*(r*3);
+    gs.effects.push({type:'phantom_decoy',x:c.x+off,y:c.y,life:1_500,maxLife:1_500,color:c.color,emoji:c.emoji,isReal:di===0});
+  }
+  addFloatText(gs,c.x,c.y-r-6,'🌀 환영의 역습!','#cc88ff',14);
+  sfx('orb');
+}
+
+// ── 18: 해일 강타 ─────────────────────────────────────────────
+export function ab_wave(gs:GameState,_cbs:GameCallbacks,c:Fighter):void {
+  const s=sc(gs),r=gs.baseR*s,ab=getAbility(18);
+  const F=gs.fieldSize;
+  const goRight=c.x<F/2;
+  const startX=goRight?0:F;
+  const spd=(F/1.2); // px/s → wave crosses field in ~1.2s
+  const[dMin,dMax]=ab.params.damage!;
+  gs.effects.push({type:'wave',x:startX,y:0,vx:goRight?spd:-spd,color:'#0088ff',caster:c,hitSet:{},life:1_400,maxLife:1_400,dmg:dMin+rnd(dMax-dMin+1)});
+  addFloatText(gs,c.x,c.y-r-6,'🌊 해일 강타!','#0088ff',14);
+  sfx('laser');
+}
+
+// ── 19: 곡사 투척 ─────────────────────────────────────────────
+export function ab_arc(gs:GameState,_cbs:GameCallbacks,c:Fighter):void {
+  const s=sc(gs),r=gs.baseR*s,ab=getAbility(19);
+  const alive=gs.fighters.filter(f=>!f.dead&&f!==c);
+  if(!alive.length) return;
+  // Target: farthest enemy
+  let farthest=alive[0],maxD=0;
+  for(const v of alive){const d=Math.hypot(v.x-c.x,v.y-c.y);if(d>maxD){maxD=d;farthest=v;}}
+  const ang=Math.atan2(farthest.y-c.y,farthest.x-c.x);
+  const spd=200*s;
+  // Start with perpendicular offset velocity
+  const perpAng=ang+Math.PI/2*(Math.random()>0.5?1:-1);
+  const[dMin,dMax]=ab.params.damage!;
+  gs.projectiles.push({
+    x:c.x,y:c.y,
+    vx:Math.cos(ang)*spd*0.5+Math.cos(perpAng)*spd*0.8,
+    vy:Math.sin(ang)*spd*0.5+Math.sin(perpAng)*spd*0.8,
+    r:10*s,dmg:dMin+rnd(dMax-dMin+1),color:'#88cc44',caster:c,life:4_000,
+    kind:'arc',launched:true,orbAng:0,orbitTime:0,
+    arcTarget:{x:farthest.x,y:farthest.y},splashRadius:ab.params.aoeRadius??40,
+  });
+  addFloatText(gs,c.x,c.y-r-6,'🪃 곡사 투척!','#88cc44',14);
+  sfx('orb');
+}
+
+// ── 20: 서리 투척 ─────────────────────────────────────────────
+export function ab_frost(gs:GameState,_cbs:GameCallbacks,c:Fighter):void {
+  const s=sc(gs),r=gs.baseR*s,ab=getAbility(20);
+  const alive=gs.fighters.filter(f=>!f.dead&&f!==c);
+  if(!alive.length) return;
+  let nearest=alive[0],md=Infinity;
+  for(const v of alive){const d=Math.hypot(v.x-c.x,v.y-c.y);if(d<md){md=d;nearest=v;}}
+  const ang=Math.atan2(nearest.y-c.y,nearest.x-c.x);
+  const[dMin,dMax]=ab.params.damage!;
+  gs.projectiles.push({
+    x:c.x,y:c.y,vx:Math.cos(ang)*220*s,vy:Math.sin(ang)*220*s,
+    r:9*s,dmg:dMin+rnd(dMax-dMin+1),color:'#88ddff',caster:c,life:4_000,
+    kind:'frost',launched:true,orbAng:0,orbitTime:0,
+    frosting:ab.params.stunDuration??2_000,
+  });
+  addFloatText(gs,c.x,c.y-r-6,'❄️ 서리 투척!','#88ddff',14);
+  sfx('orb');
+}
+
+// ── 22: 딸기 폭격 ─────────────────────────────────────────────
+export function ab_barrage(gs:GameState,_cbs:GameCallbacks,c:Fighter):void {
+  const s=sc(gs),r=gs.baseR*s,ab=getAbility(22);
+  const count=ab.params.projectileCount??10;
+  const[dMin,dMax]=ab.params.damage!;
+  const rangeX=gs.fieldSize*0.7;
+  for(let i=0;i<count;i++){
+    const bx=Math.max(r*2,Math.min(gs.fieldSize-r*2,c.x+(Math.random()-0.5)*rangeX));
+    gs.projectiles.push({
+      x:bx,y:-10,vx:0,vy:280*s,
+      r:10*s,dmg:dMin+rnd(dMax-dMin+1),color:'#ff4466',caster:c,life:3_500,
+      kind:'fall',launched:true,orbAng:0,orbitTime:0,fallFromTop:true,
+    });
+  }
+  addFloatText(gs,c.x,c.y-r-6,'🍓 딸기 폭격!','#ff4466',14);
+  sfx('boom');
+}
+
+// ── 23: 그림자 결박 ───────────────────────────────────────────
+export function ab_shadowbind(gs:GameState,_cbs:GameCallbacks,c:Fighter):void {
+  const s=sc(gs),r=gs.baseR*s,ab=getAbility(23);
+  const alive=gs.fighters.filter(f=>!f.dead&&f!==c);
+  if(!alive.length) return;
+  let nearest=alive[0],md=Infinity;
+  for(const v of alive){const d=Math.hypot(v.x-c.x,v.y-c.y);if(d<md){md=d;nearest=v;}}
+  const dur=ab.params.stunDuration??1_500;
+  nearest.slowed=dur; nearest.slowMult=0.22;
+  nearest.poisonTimer=Math.max(nearest.poisonTimer,dur);
+  nearest.poisonDmg=ab.params.dotDamage??8; nearest.poisonCaster=c;
+  gs.effects.push({type:'shadowbind',casterId:c.id,targetId:nearest.id,life:dur,maxLife:dur,color:'#442266'});
+  addFloatText(gs,c.x,c.y-r-6,'🕸️ 그림자 결박!','#442266',14);
+  addFloatText(gs,nearest.x,nearest.y-r-4,'결박!','#cc44ff',11);
+  sfx('elec');
+}
+
+// ── 24: 지뢰 매설 ─────────────────────────────────────────────
+export function ab_mine(gs:GameState,_cbs:GameCallbacks,c:Fighter):void {
+  const s=sc(gs),r=gs.baseR*s,ab=getAbility(24);
+  const[dMin,dMax]=ab.params.damage!;
+  gs.effects.push({type:'mine',x:c.x,y:c.y,r:(ab.params.aoeRadius??70)*s,
+    life:1_500,maxLife:1_500,color:'#887700',caster:c,
+    dmg:dMin+rnd(dMax-dMin+1),exploded:false});
+  addFloatText(gs,c.x,c.y-r-6,'💥 지뢰 매설!','#887700',13);
+}
+
+// ── 25: 관통 사격 ─────────────────────────────────────────────
+export function ab_pierce(gs:GameState,cbs:GameCallbacks,c:Fighter):void {
+  const s=sc(gs),r=gs.baseR*s,ab=getAbility(25);
+  const ang=Math.atan2(c.vy,c.vx)||0;
+  const far=gs.fieldSize*1.5;
+  const x1=c.x-Math.cos(ang)*far,y1=c.y-Math.sin(ang)*far;
+  const x2=c.x+Math.cos(ang)*far,y2=c.y+Math.sin(ang)*far;
+  const[dMin,dMax]=ab.params.damage!;
+  for(const v of gs.fighters.filter(f=>!f.dead&&f!==c)){
+    if(lineCirHit(x1,y1,x2,y2,v.x,v.y,r*1.05)&&v.invul<=0)
+      dealDmg(gs,cbs,c,v,dMin+rnd(dMax-dMin+1),ab.params.knockbackMult!);
+  }
+  gs.effects.push({type:'sniper',lines:[[{x:x1,y:y1},{x:x2,y:y2}]],color:'#ffcc00',life:300,maxLife:300});
+  addFloatText(gs,c.x,c.y-r-6,'🔫 관통 사격!','#ffcc00',14);
+  sfx('laser');
+}
