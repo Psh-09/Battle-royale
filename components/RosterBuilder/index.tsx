@@ -87,7 +87,8 @@ export default function RosterBuilder({ onStart }: RosterBuilderProps) {
   const [count, setCount] = useState(4);
   const [slots, setSlots] = useState<RosterSlot[]>(() => makeSlots(4));
   const [abilityMode, setAbilityMode] = useState<AbilityMode>('random');
-  const [selectedAbilityIds, setSelectedAbilityIds] = useState<(number | null)[]>(() => Array(4).fill(null));
+  // 'random' = 랜덤 옵션 선택, null = 미선택, number = 특정 능력 ID
+  const [selectedAbilityIds, setSelectedAbilityIds] = useState<(number | 'random' | null)[]>(() => Array(4).fill(null));
   const [selectedAbility, setSelectedAbility] = useState<AbilityDef | null>(null);
   const [duplicateError, setDuplicateError] = useState(false);
 
@@ -109,7 +110,8 @@ export default function RosterBuilder({ onStart }: RosterBuilderProps) {
     updateSlot(id, { imageUrl: URL.createObjectURL(file) }), [updateSlot]);
 
   const handleAbilitySelect = (slotIdx: number, value: string) => {
-    const id = value === '' ? null : parseInt(value);
+    const id: number | 'random' | null =
+      value === '' ? null : value === 'random' ? 'random' : parseInt(value);
     setSelectedAbilityIds(prev => prev.map((v, i) => i === slotIdx ? id : v));
     setDuplicateError(false);
   };
@@ -118,18 +120,23 @@ export default function RosterBuilder({ onStart }: RosterBuilderProps) {
     if (slots.some(s => !s.name.trim())) return;
 
     if (abilityMode === 'manual') {
-      // 모든 슬롯에 능력이 선택됐는지 확인
+      // 미선택 슬롯이 있으면 차단
       if (selectedAbilityIds.some(id => id === null)) return;
-      const ids = selectedAbilityIds as number[];
 
-      // 중복 확인
-      if (new Set(ids).size < ids.length) {
+      // 직접 선택(number)끼리만 중복 확인
+      const definiteIds = selectedAbilityIds.filter((id): id is number => typeof id === 'number');
+      if (new Set(definiteIds).size < definiteIds.length) {
         setDuplicateError(true);
         return;
       }
 
-      // 슬롯에 능력 ID 포함해서 전달
-      onStart(slots.map((s, i) => ({ ...s, abilityId: ids[i] })));
+      // 슬롯 전달: 'random' → undefined(랜덤 배분), number → 해당 ID
+      onStart(slots.map((s, i) => ({
+        ...s,
+        abilityId: typeof selectedAbilityIds[i] === 'number'
+          ? (selectedAbilityIds[i] as number)
+          : undefined,   // 'random' or null → buildFighters에서 랜덤 배분
+      })));
     } else {
       onStart(slots);
     }
@@ -137,6 +144,7 @@ export default function RosterBuilder({ onStart }: RosterBuilderProps) {
 
   const autoAbs = ABILITY_DEFS.filter(a => a.type === 'auto');
   const collAbs = ABILITY_DEFS.filter(a => a.type === 'collision');
+  // 직접 선택 모드: '랜덤' 포함 모든 슬롯이 선택된 경우에만 시작 가능
   const canStart = slots.every(s => s.name.trim().length > 0) &&
     (abilityMode === 'random' || selectedAbilityIds.every(id => id !== null));
 
@@ -198,7 +206,11 @@ export default function RosterBuilder({ onStart }: RosterBuilderProps) {
                 {/* 직접 선택 모드: 능력 드롭다운 */}
                 {abilityMode === 'manual' && (
                   <select
-                    value={selectedAbilityIds[idx] ?? ''}
+                    value={
+                      selectedAbilityIds[idx] === null ? '' :
+                      selectedAbilityIds[idx] === 'random' ? 'random' :
+                      String(selectedAbilityIds[idx])
+                    }
                     onChange={e => handleAbilitySelect(idx, e.target.value)}
                     className={`w-full text-[11px] rounded px-2 py-1.5 border focus:outline-none transition-colors
                       ${selectedAbilityIds[idx] === null
@@ -206,6 +218,7 @@ export default function RosterBuilder({ onStart }: RosterBuilderProps) {
                         : 'bg-gray-800 border-blue-600 text-white'}`}
                   >
                     <option value="">-- 능력 선택 --</option>
+                    <option value="random">🎲 랜덤 배정 (남은 능력 중 자동)</option>
                     <optgroup label="⏱ 자동 발동형">
                       {autoAbs.map(ab => (
                         <option key={ab.id} value={ab.id}>
@@ -298,8 +311,8 @@ export default function RosterBuilder({ onStart }: RosterBuilderProps) {
       {/* 직접 선택 미완료 안내 */}
       {abilityMode === 'manual' && selectedAbilityIds.some(id => id === null) && (
         <div className="text-center text-[11px] text-gray-500">
-          모든 선수의 능력을 선택해야 대전을 시작할 수 있습니다
-          ({selectedAbilityIds.filter(id => id !== null).length}/{count} 선택됨)
+          모든 선수의 능력을 선택하거나 🎲 랜덤으로 설정해야 합니다
+          ({selectedAbilityIds.filter(id => id !== null).length}/{count} 완료)
         </div>
       )}
 

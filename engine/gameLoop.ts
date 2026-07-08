@@ -1,10 +1,12 @@
 import type { GameState, GameCallbacks } from '@/types';
 import { moveFighters, resolvePairCollisions } from './physics';
 import { checkAutoAbility, fireCollisionAbility } from './abilities/index';
-import { updateParticles, updateConfetti, updateFloatTexts, addFloatText } from './particles';
+import { updateParticles, updateConfetti, updateFloatTexts, addFloatText, spawnParticles } from './particles';
 import { updateEffects } from './effects';
 import { updateProjectiles } from './projectiles';
 import { updateTornadoes } from './tornadoes';
+import { rawDmg } from './combat';
+import { sfx } from './audio';
 import { HP_LAG_RATE } from '@/data/constants';
 
 const SUDDEN_DEATH_TIME_MS = 90_000;       // 1분 30초
@@ -83,6 +85,7 @@ export function stepGameState(gs: GameState, cbs: GameCallbacks, ts: number, spe
     updateProjectiles(gs, cbs, dt);
     updateTornadoes(gs, cbs, dt);
     updateEffects(gs, cbs, dt);
+    updateSlotMachines(gs, cbs, dt);
     updateParticles(gs, dt);
     updateConfetti(gs, dt);
     updateFloatTexts(gs, dt);
@@ -91,5 +94,34 @@ export function stepGameState(gs: GameState, cbs: GameCallbacks, ts: number, spe
   for (const f of gs.fighters) {
     if (f.hpLag > f.hp)
       f.hpLag = Math.max(f.hp, f.hpLag - Math.max(2, (f.hpLag - f.hp) * HP_LAG_RATE) * (raw / 16.67));
+  }
+}
+
+// ── 슬롯머신 업데이트: 타이머 감소 → 종료 시 데미지 적용 ─────
+function updateSlotMachines(gs: GameState, cbs: GameCallbacks, dt: number): void {
+  const sc = gs.fieldSize / 500;
+  const r  = gs.baseR * sc;
+
+  for (let i = gs.slotMachines.length - 1; i >= 0; i--) {
+    const sm = gs.slotMachines[i];
+    sm.timer -= dt;
+
+    if (sm.timer <= 0) {
+      // 슬롯 종료: 데미지 적용
+      const defender = gs.fighters.find(f => f.id === sm.defenderId);
+      const attacker = gs.fighters.find(f => f.id === sm.attackerId);
+      if (defender && !defender.dead) {
+        defender.invul = 0;
+        rawDmg(gs, cbs, attacker ?? null, defender, sm.damage, 0.5);
+        const col = sm.damage >= 700 ? '#ff0000'
+                  : sm.damage >= 400 ? '#ff8800'
+                  : sm.damage >= 200 ? '#ffcc00' : '#88ff88';
+        const sz  = Math.min(20, Math.max(13, 13 + Math.floor(sm.damage / 100)));
+        addFloatText(gs, defender.x, defender.y - r - 6, `🎰 ${sm.damage}!`, col, sz);
+        if (sm.damage >= 700) { spawnParticles(gs, defender.x, defender.y, 50); sfx('ult'); }
+        else sfx('hit');
+      }
+      gs.slotMachines.splice(i, 1);
+    }
   }
 }

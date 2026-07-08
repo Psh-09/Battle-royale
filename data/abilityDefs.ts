@@ -133,23 +133,52 @@ export const ABILITY_DEFS: AbilityDef[] = [
 // ─── 도박꾼 전용 확률 함수 ─────────────────────────────────────
 
 /**
- * 데미지 분포 (너프 버전):
- * ① P(999) = 0.001 명시적 스파이크 (변경 없음)
- * ② 나머지 99.9%: Exp(λ=0.02) → [1,998] 클리핑
- *    → P(≥150 | not 999) = e^{-149×0.02} = e^{-2.98} ≈ 5.0%
- *    → P(≥150) 전체 ≈ 5.1%  (기존 λ=0.00692 대비 35.7% → 7배 감소)
- *    → 중앙값 ≈ 35 (기존 ≈ 100)
+ * 슬롯머신 데미지 산출 (3자리 숫자: 000~999)
+ *
+ * [첫 번째 자리 - 百의 자리 특수 분포]
+ * 0:70%, 1:20%, 2:5%, 3:3%, 4:1%, 5-9: 나머지 1% 지수 감소 (비율 1/2)
+ * 5:16/31%, 6:8/31%, 7:4/31%, 8:2/31%, 9:1/31%  →  p1(9) ≈ 0.0323%
+ *
+ * [두/세 번째 자리 - 공통 지수 감소 r=0.9]
+ * P(d) ∝ 0.9^d, 정규화 sum≈6.513
+ * P(0)≈15.4%, P(9)≈5.94%
+ * 수학적 주의: p2=p3 이론값≈55.7% (P(999)=0.01% 조건) → 불가능 (역감소 분포됨)
+ * 실제 구현은 자연스러운 r=0.9 사용, 실제 P(999)≈0.000113%
+ *
+ * 고데미지 빈도: 너프버전(5.1%) < 슬롯머신(≈17%) < 최초버전(35.7%) ✓
  */
-const GAMBLER_LAMBDA = 0.02; // 기존 0.00692에서 너프 (약 3배 가파른 감쇠)
 
+// 첫 번째 자리 가중치 (0~9)
+const REEL1_W = [
+  70, 20, 5, 3, 1,
+  16/31, 8/31, 4/31, 2/31, 1/31  // 5-9: 합=1%, 비율=1/2씩 감소
+];
+// 두/세 번째 자리 가중치 (r=0.9 기하분포)
+const REEL23_W = [1, 0.9, 0.81, 0.729, 0.6561, 0.59049, 0.531441, 0.478297, 0.430467, 0.387421];
+
+function rollFromWeights(weights: readonly number[]): number {
+  const total = weights.reduce((a, b) => a + b, 0);
+  let rand = Math.random() * total;
+  for (let i = 0; i < weights.length; i++) {
+    rand -= weights[i];
+    if (rand <= 0) return i;
+  }
+  return weights.length - 1;
+}
+
+/** 슬롯머신 3자리를 한 번에 결정 */
+export function rollSlotDamage(): { digits: [number, number, number]; damage: number } {
+  const d0 = rollFromWeights(REEL1_W);
+  const d1 = rollFromWeights(REEL23_W);
+  const d2 = rollFromWeights(REEL23_W);
+  const raw = d0 * 100 + d1 * 10 + d2;
+  const damage = Math.max(1, raw); // 000이면 1로 보정
+  return { digits: [d0, d1, d2], damage };
+}
+
+/** @deprecated 이전 단일 데미지 산출 (호환성 유지) */
 export function getWeightedDamage(): number {
-  // ① 0.1% 고정 대박: 999
-  if (Math.random() < 0.001) return 999;
-  // ② 나머지: 지수 감쇠 [1,998]
-  const u = Math.random();
-  if (u <= 0) return 1;
-  const x = -Math.log(u) / GAMBLER_LAMBDA;
-  return Math.min(998, Math.max(1, Math.floor(x) + 1));
+  return rollSlotDamage().damage;
 }
 
 /**

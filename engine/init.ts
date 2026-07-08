@@ -47,30 +47,32 @@ export async function loadImage(url: string): Promise<HTMLImageElement> {
 }
 
 export async function buildFighters(slots: RosterSlot[], fieldSize: number): Promise<Fighter[]> {
-  const n=slots.length;
+  const n = slots.length;
 
-  // 직접 선택 모드: 모든 슬롯에 abilityId가 지정된 경우 그대로 사용
-  // 랜덤 배분 모드: 기존과 동일하게 셔플 후 배분
-  const allManual = slots.every(s => s.abilityId !== undefined);
-  let assignedIds: number[];
-  if (allManual) {
-    assignedIds = slots.map(s => s.abilityId!);
-  } else {
-    const pool = shuffle([...ALL_ABILITY_IDS]);
-    assignedIds = pool.slice(0, n);
-  }
+  // 직접 선택 슬롯의 ID Set (랜덤/미지정 제외)
+  const definiteIds = new Set(
+    slots.filter(s => s.abilityId !== undefined).map(s => s.abilityId!)
+  );
+  // 랜덤 슬롯에 배분할 풀: 직접 선택되지 않은 능력들
+  const randomPool = shuffle([...ALL_ABILITY_IDS.filter(id => !definiteIds.has(id))]);
+  let randomIdx = 0;
 
-  return Promise.all(slots.map(async(slot,i)=>{
-    let imageEl: HTMLImageElement|null=null;
-    if(slot.imageUrl){try{imageEl=await loadImage(slot.imageUrl);}catch{}}
-    return createFighter(slot,i,n,assignedIds[i],imageEl,fieldSize);
+  const assignedIds = slots.map(s =>
+    s.abilityId !== undefined ? s.abilityId : randomPool[randomIdx++]
+  );
+
+  return Promise.all(slots.map(async (slot, i) => {
+    let imageEl: HTMLImageElement | null = null;
+    if (slot.imageUrl) { try { imageEl = await loadImage(slot.imageUrl); } catch {} }
+    return createFighter(slot, i, n, assignedIds[i], imageEl, fieldSize);
   }));
 }
 
 export function initGameState(fighters: Fighter[], fieldSize: number): GameState {
   return {
-    fighters, particles:[], confetti:[], effects:[], projectiles:[], tornadoes:[], floatTexts:[],
-    elapsed:0, gameOver:false, fieldSize, baseR:charRadius(fighters.length), lastTs:0,
-    suddenDeath:false, arenaMargin:0,
+    fighters, particles: [], confetti: [], effects: [], projectiles: [],
+    tornadoes: [], floatTexts: [], slotMachines: [],
+    elapsed: 0, gameOver: false, fieldSize, baseR: charRadius(fighters.length), lastTs: 0,
+    suddenDeath: false, arenaMargin: 0,
   };
 }

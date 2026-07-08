@@ -1,5 +1,5 @@
 import type { Fighter, GameState, GameCallbacks } from '@/types';
-import { getAbility, getWeightedDamage } from '@/data/abilityDefs';
+import { getAbility, rollSlotDamage } from '@/data/abilityDefs';
 import { rawDmg } from '../combat';
 import { spawnParticles, spawnMiniParticles, addFloatText } from '../particles';
 import { sfx } from '../audio';
@@ -123,31 +123,35 @@ export function ab_rift(gs:GameState,cbs:GameCallbacks,att:Fighter,def:Fighter):
   sfx('boom');
 }
 
-// ── 26: 도박꾼 ────────────────────────────────────────────────
-// 데미지: getWeightedDamage() — 지수 분포 기반, P(999)=0.1%
-// 쿨타임: 2~5초 균등(uniform) 랜덤
+// ── 26: 도박꾼 (슬롯머신 리메이크) ───────────────────────────
+// 충돌 → 2초 경직+무적(시전자+상대) → 슬롯머신 연출 → 데미지 적용
 export function ab_gambler(gs:GameState,cbs:GameCallbacks,att:Fighter,def:Fighter):void{
   const s=sc(gs);
 
-  // 랜덤 쿨타임: 0.5s~4s uniform (매 발동마다 새로 결정)
-  att.abilityCd = 2_000 + Math.random() * 3_000; // 2~5초 uniform
+  // 랜덤 쿨타임: 2~5초 uniform
+  att.abilityCd = 2_000 + Math.random() * 3_000;
 
-  // 랜덤 데미지: 지수 감소 확률분포 (낮은 값 고확률, P(999)=0.1%)
-  const dmg = getWeightedDamage();
+  // 시전자: 2초 경직 (zero-velocity KB)
+  att.kbT = 2_000; att.kbVx = 0; att.kbVy = 0;
 
-  rawDmg(gs, cbs, att, def, dmg, 0.7);
+  // 상대: 2초 경직+무적
+  def.kbT = 2_000; def.kbVx = 0; def.kbVy = 0;
+  def.invul = 2_000;
 
-  // 데미지 크기에 따른 색상 + 크기 연출
-  const col = dmg >= 900 ? '#ff0000'
-            : dmg >= 500 ? '#ff6600'
-            : dmg >= 200 ? '#ffcc00'
-            : dmg >= 50  ? '#88ff88'
-            :               '#aaaaaa';
-  const sz = Math.min(20, Math.max(11, 11 + Math.floor(dmg / 80)));
-  addFloatText(gs, def.x, def.y - gs.baseR*s - 6, `🎲 ${dmg}!`, col, sz);
+  // 슬롯 결과 미리 결정 (3자리 숫자)
+  const { digits, damage } = rollSlotDamage();
 
-  if (dmg >= 900) {
-    spawnParticles(gs, def.x, def.y, 40); // 대박 연출
-    sfx('ult');
-  }
+  // 슬롯머신 엔티티 등록 → gameLoop에서 타이머 감소 후 데미지 적용
+  gs.slotMachines.push({
+    x: gs.fieldSize / 2,
+    y: gs.fieldSize / 2,
+    attackerId: att.id,
+    defenderId: def.id,
+    timer: 2_000,
+    digits,
+    damage,
+  });
+
+  addFloatText(gs, att.x, att.y - gs.baseR*s - 6, '🎰 도박꾼!', '#ff9900', 14);
+  sfx('orb');
 }

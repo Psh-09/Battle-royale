@@ -175,6 +175,16 @@ export interface EliminationEntry {
   fighterId: string; name: string; color: string; rank: number; time: number;
 }
 
+/** 도박꾼 능력 슬롯머신 상태 */
+export interface SlotMachine {
+  x: number; y: number;
+  attackerId: string;
+  defenderId: string;
+  timer: number;          // 카운트다운 ms (2000 → 0)
+  digits: [number, number, number]; // 확정 숫자
+  damage: number;         // 최종 데미지
+}
+
 export interface GameState {
   fighters: Fighter[];
   particles: Particle[];
@@ -183,6 +193,7 @@ export interface GameState {
   projectiles: Projectile[];
   tornadoes: Tornado[];
   floatTexts: FloatText[];
+  slotMachines: SlotMachine[];
   elapsed: number;
   gameOver: boolean;
   fieldSize: number;
