@@ -39,7 +39,8 @@ function drawSlotMachines(ctx: CanvasRenderingContext2D, gs: GameState): void {
 
     ctx.save();
 
-    // ─ 몸체 ───────────────────────────────────────────────────────
+    // ─ 몸체 ── beginPath() 필수: 경로 누적 방지 ────────────────────
+    ctx.beginPath();
     ctx.fillStyle = '#1a0a00';
     ctx.strokeStyle = '#ffd700';
     ctx.lineWidth = 2 * s;
@@ -52,9 +53,9 @@ function drawSlotMachines(ctx: CanvasRenderingContext2D, gs: GameState): void {
     // ─ 상단 램프 3개 ──────────────────────────────────────────────
     const blink = Math.floor(Date.now() / 200) % 2 === 0;
     for (let li = 0; li < 3; li++) {
+      ctx.beginPath(); // 각 램프마다 새 경로
       ctx.fillStyle = blink ? '#ff2200' : '#660000';
       ctx.shadowColor = '#ff0000'; ctx.shadowBlur = blink ? 7*s : 2*s;
-      ctx.beginPath();
       ctx.arc(x0 + W*(li+1)/4, y0 + H*0.1, 3*s, 0, Math.PI*2);
       ctx.fill();
     }
@@ -69,6 +70,10 @@ function drawSlotMachines(ctx: CanvasRenderingContext2D, gs: GameState): void {
 
     for (let ci = 0; ci < 3; ci++) {
       const cx3 = cX0 + ci*(cW + cGap);
+
+      // ↓ 핵심 수정: 칸마다 반드시 beginPath()로 새 경로 시작
+      //   없으면 이전 칸들의 경로가 누적돼 마지막 fill()이 전체를 덮어씀
+      ctx.beginPath();
       if (!stopped[ci]) {
         const pulse = 0.4 + 0.35*Math.sin(Date.now()/80);
         ctx.fillStyle = `rgba(255,220,0,${pulse*0.35})`;
@@ -79,6 +84,7 @@ function drawSlotMachines(ctx: CanvasRenderingContext2D, gs: GameState): void {
       cx2.roundRect(cx3, cY, cW, cH, 3*s);
       ctx.fill(); ctx.stroke();
 
+      // 숫자 텍스트 (fillText는 경로 불필요)
       ctx.font = `bold ${cH*0.68}px monospace`;
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       ctx.fillStyle = stopped[ci] ? '#1a1a1a' : '#888888';
@@ -93,15 +99,15 @@ function drawSlotMachines(ctx: CanvasRenderingContext2D, gs: GameState): void {
 
     // ─ 손잡이 레버 ────────────────────────────────────────────────
     const hx = x0 + W + 2*s;
-    ctx.strokeStyle = '#aaa'; ctx.lineWidth = 2.5*s; ctx.lineCap = 'round';
     ctx.beginPath();
+    ctx.strokeStyle = '#aaa'; ctx.lineWidth = 2.5*s; ctx.lineCap = 'round';
     ctx.moveTo(hx, y0 + H*0.3);
     ctx.lineTo(hx + 9*s, y0 + H*0.3);
     ctx.lineTo(hx + 9*s, y0 + H*0.65);
     ctx.stroke();
+    ctx.beginPath();
     ctx.fillStyle = '#cc0000';
     ctx.shadowColor = '#ff0000'; ctx.shadowBlur = 5*s;
-    ctx.beginPath();
     ctx.arc(hx + 9*s, y0 + H*0.65, 4.5*s, 0, Math.PI*2);
     ctx.fill();
     ctx.shadowBlur = 0;
