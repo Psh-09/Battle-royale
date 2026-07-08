@@ -1,5 +1,5 @@
 import type { Fighter, GameState, GameCallbacks } from '@/types';
-import { getAbility } from '@/data/abilityDefs';
+import { getAbility, getWeightedDamage } from '@/data/abilityDefs';
 import { rawDmg } from '../combat';
 import { spawnParticles, spawnMiniParticles, addFloatText } from '../particles';
 import { sfx } from '../audio';
@@ -121,4 +121,33 @@ export function ab_rift(gs:GameState,cbs:GameCallbacks,att:Fighter,def:Fighter):
   }
   addFloatText(gs,att.x,att.y-gs.baseR*s-6,'⚡ 균열 강타!',att.color,13);
   sfx('boom');
+}
+
+// ── 26: 도박꾼 ────────────────────────────────────────────────
+// 데미지: getWeightedDamage() — 지수 분포 기반, P(999)=0.1%
+// 쿨타임: 0.5~4초 균등(uniform) 랜덤
+export function ab_gambler(gs:GameState,cbs:GameCallbacks,att:Fighter,def:Fighter):void{
+  const s=sc(gs);
+
+  // 랜덤 쿨타임: 0.5s~4s uniform (매 발동마다 새로 결정)
+  att.abilityCd = 500 + Math.random() * 3_500;
+
+  // 랜덤 데미지: 지수 감소 확률분포 (낮은 값 고확률, P(999)=0.1%)
+  const dmg = getWeightedDamage();
+
+  rawDmg(gs, cbs, att, def, dmg, 0.7);
+
+  // 데미지 크기에 따른 색상 + 크기 연출
+  const col = dmg >= 900 ? '#ff0000'
+            : dmg >= 500 ? '#ff6600'
+            : dmg >= 200 ? '#ffcc00'
+            : dmg >= 50  ? '#88ff88'
+            :               '#aaaaaa';
+  const sz = Math.min(20, Math.max(11, 11 + Math.floor(dmg / 80)));
+  addFloatText(gs, def.x, def.y - gs.baseR*s - 6, `🎲 ${dmg}!`, col, sz);
+
+  if (dmg >= 900) {
+    spawnParticles(gs, def.x, def.y, 40); // 대박 연출
+    sfx('ult');
+  }
 }

@@ -1,5 +1,5 @@
 import type { Fighter, GameState, RosterSlot } from '@/types';
-import { ALL_ABILITY_IDS, ABILITY_DEFS } from '@/data/abilityDefs';
+import { ALL_ABILITY_IDS, ABILITY_DEFS, getGamblerHp } from '@/data/abilityDefs';
 import { charRadius, BASE_SPEED, FALLBACK_EMOJIS } from '@/data/constants';
 
 function shuffle<T>(arr: T[]): T[] {
@@ -15,8 +15,8 @@ export function createFighter(slot: RosterSlot, index: number, total: number, ab
   const spawnAng = (index/total)*Math.PI*2 - Math.PI/2;
   const moveAng = Math.random()*Math.PI*2;
   const baseSpd = (BASE_SPEED+(Math.random()-.5)*20)*s*speedMult;
-  // 능력 강도에 반비례하는 체력 — ab.maxHp가 없으면 기본 350
-  const baseHp = ab?.maxHp ?? 350;
+  // 도박꾼(id:26): HP 250~450 랜덤 선형 분포 / 나머지: 능력별 고정 HP
+  const baseHp = abilityId === 26 ? getGamblerHp() : (ab?.maxHp ?? 350);
   return {
     id:slot.id, name:slot.name, color:slot.color, imageEl,
     emoji:FALLBACK_EMOJIS[index%FALLBACK_EMOJIS.length],

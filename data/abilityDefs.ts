@@ -121,10 +121,45 @@ export const ABILITY_DEFS: AbilityDef[] = [
   { id:24, name:'지뢰 매설',   emoji:'💥', type:'auto', cd:15_000, color:'#887700',
     desc:'랜덤 3곳에 지뢰 투척 — 접근 즉시 또는 1.5초 후 자동 폭발 (범위 ×1.3)', maxHp:360,
     params:{ damage:[65,80], aoeRadius:91 } }, // 3개 투척+범위 ×1.3, HP 버프 반영
-  { id:25, name:'관통 사격',   emoji:'🔫', type:'auto', cd:12_000, color:'#ffcc00',
-    desc:'이동 방향으로 즉발 관통 사격 — 경로 내 모든 적 피해', maxHp:400,
-    params:{ damage:[42,55], knockbackMult:0.4 } },
+  // id:25 관통사격 제거됨
+  {
+    id: 26, name: '도박꾼', emoji: '🎲', type: 'collision', cd: 500, color: '#ff9900',
+    desc: '충돌 시 랜덤 데미지(1~999, 지수 감소 확률) + 랜덤 쿨타임(0.5~4초). HP도 랜덤(250~450)',
+    params: { damage: [1, 999], knockbackMult: 0.7 },
+    maxHp: 350, // 로비 표시용 대표값 — 실제 fighter HP는 getGamblerHp()로 랜덤 배정
+  },
 ];
+
+// ─── 도박꾼 전용 확률 함수 ─────────────────────────────────────
+
+/**
+ * 데미지 분포: 지수 분포 Exp(λ)에서 샘플링하여 [1,999] 정수로 매핑
+ * λ = ln(1000)/998 → P(damage=999) = P(X≥998) = e^{-998λ} = 1/1000 = 0.1% 정확
+ * 낮은 값일수록 훨씬 자주 나오는 강한 지수 감소 분포
+ */
+const GAMBLER_LAMBDA = Math.log(1000) / 998; // ≈ 0.006921
+
+export function getWeightedDamage(): number {
+  const u = Math.random();
+  if (u <= 0) return 999;
+  const x = -Math.log(u) / GAMBLER_LAMBDA;
+  return Math.min(999, Math.max(1, Math.floor(x) + 1));
+}
+
+/**
+ * 체력 분포: 250~450, 10 단위, 선형 감소 (250이 가장 높고 450이 가장 낮음)
+ * 가중치: [21, 20, 19, ..., 2, 1] (i번째 후보 = 250+10i, 가중치 = 21-i)
+ * 합계 = 231, P(250) ≈ 9.1%, P(450) ≈ 0.43%
+ */
+export function getGamblerHp(): number {
+  const totalWeight = 231; // 21×22/2
+  let rand = Math.random() * totalWeight;
+  for (let i = 0; i <= 20; i++) {
+    rand -= (21 - i);
+    if (rand <= 0) return 250 + i * 10;
+  }
+  return 450;
+}
 
 export function getAbility(id: number): AbilityDef {
   const ab = ABILITY_DEFS.find((a) => a.id === id);

@@ -238,19 +238,4 @@ export function ab_mine(gs:GameState,_cbs:GameCallbacks,c:Fighter):void {
   addFloatText(gs,c.x,c.y-r-6,'💥 지뢰 매설! ×3','#887700',13);
 }
 
-// ── 25: 관통 사격 ─────────────────────────────────────────────
-export function ab_pierce(gs:GameState,cbs:GameCallbacks,c:Fighter):void {
-  const s=sc(gs),r=gs.baseR*s,ab=getAbility(25);
-  const ang=Math.atan2(c.vy,c.vx)||0;
-  const far=gs.fieldSize*1.5;
-  const x1=c.x-Math.cos(ang)*far,y1=c.y-Math.sin(ang)*far;
-  const x2=c.x+Math.cos(ang)*far,y2=c.y+Math.sin(ang)*far;
-  const[dMin,dMax]=ab.params.damage!;
-  for(const v of gs.fighters.filter(f=>!f.dead&&f!==c)){
-    if(lineCirHit(x1,y1,x2,y2,v.x,v.y,r*1.05)&&v.invul<=0)
-      dealDmg(gs,cbs,c,v,dMin+rnd(dMax-dMin+1),ab.params.knockbackMult!);
-  }
-  gs.effects.push({type:'sniper',lines:[[{x:x1,y:y1},{x:x2,y:y2}]],color:'#ffcc00',life:300,maxLife:300});
-  addFloatText(gs,c.x,c.y-r-6,'🔫 관통 사격!','#ffcc00',14);
-  sfx('laser');
-}
+// id:25 관통사격 제거됨
