@@ -125,12 +125,12 @@ export function ab_rift(gs:GameState,cbs:GameCallbacks,att:Fighter,def:Fighter):
 
 // ── 26: 도박꾼 ────────────────────────────────────────────────
 // 데미지: getWeightedDamage() — 지수 분포 기반, P(999)=0.1%
-// 쿨타임: 0.5~4초 균등(uniform) 랜덤
+// 쿨타임: 2~5초 균등(uniform) 랜덤
 export function ab_gambler(gs:GameState,cbs:GameCallbacks,att:Fighter,def:Fighter):void{
   const s=sc(gs);
 
   // 랜덤 쿨타임: 0.5s~4s uniform (매 발동마다 새로 결정)
-  att.abilityCd = 500 + Math.random() * 3_500;
+  att.abilityCd = 2_000 + Math.random() * 3_000; // 2~5초 uniform
 
   // 랜덤 데미지: 지수 감소 확률분포 (낮은 값 고확률, P(999)=0.1%)
   const dmg = getWeightedDamage();

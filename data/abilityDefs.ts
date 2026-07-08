@@ -133,17 +133,23 @@ export const ABILITY_DEFS: AbilityDef[] = [
 // ─── 도박꾼 전용 확률 함수 ─────────────────────────────────────
 
 /**
- * 데미지 분포: 지수 분포 Exp(λ)에서 샘플링하여 [1,999] 정수로 매핑
- * λ = ln(1000)/998 → P(damage=999) = P(X≥998) = e^{-998λ} = 1/1000 = 0.1% 정확
- * 낮은 값일수록 훨씬 자주 나오는 강한 지수 감소 분포
+ * 데미지 분포 (너프 버전):
+ * ① P(999) = 0.001 명시적 스파이크 (변경 없음)
+ * ② 나머지 99.9%: Exp(λ=0.02) → [1,998] 클리핑
+ *    → P(≥150 | not 999) = e^{-149×0.02} = e^{-2.98} ≈ 5.0%
+ *    → P(≥150) 전체 ≈ 5.1%  (기존 λ=0.00692 대비 35.7% → 7배 감소)
+ *    → 중앙값 ≈ 35 (기존 ≈ 100)
  */
-const GAMBLER_LAMBDA = Math.log(1000) / 998; // ≈ 0.006921
+const GAMBLER_LAMBDA = 0.02; // 기존 0.00692에서 너프 (약 3배 가파른 감쇠)
 
 export function getWeightedDamage(): number {
+  // ① 0.1% 고정 대박: 999
+  if (Math.random() < 0.001) return 999;
+  // ② 나머지: 지수 감쇠 [1,998]
   const u = Math.random();
-  if (u <= 0) return 999;
+  if (u <= 0) return 1;
   const x = -Math.log(u) / GAMBLER_LAMBDA;
-  return Math.min(999, Math.max(1, Math.floor(x) + 1));
+  return Math.min(998, Math.max(1, Math.floor(x) + 1));
 }
 
 /**

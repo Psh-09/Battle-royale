@@ -31,6 +31,8 @@ export interface RosterSlot {
   name: string;
   color: string;
   imageUrl: string | null;
+  /** 직접 선택 모드에서 지정한 능력 ID. undefined = 랜덤 배정 */
+  abilityId?: number;
 }
 
 export interface Fighter {

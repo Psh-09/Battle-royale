@@ -48,8 +48,18 @@ export async function loadImage(url: string): Promise<HTMLImageElement> {
 
 export async function buildFighters(slots: RosterSlot[], fieldSize: number): Promise<Fighter[]> {
   const n=slots.length;
-  const pool=shuffle([...ALL_ABILITY_IDS]);
-  const assignedIds=pool.slice(0,n);
+
+  // 직접 선택 모드: 모든 슬롯에 abilityId가 지정된 경우 그대로 사용
+  // 랜덤 배분 모드: 기존과 동일하게 셔플 후 배분
+  const allManual = slots.every(s => s.abilityId !== undefined);
+  let assignedIds: number[];
+  if (allManual) {
+    assignedIds = slots.map(s => s.abilityId!);
+  } else {
+    const pool = shuffle([...ALL_ABILITY_IDS]);
+    assignedIds = pool.slice(0, n);
+  }
+
   return Promise.all(slots.map(async(slot,i)=>{
     let imageEl: HTMLImageElement|null=null;
     if(slot.imageUrl){try{imageEl=await loadImage(slot.imageUrl);}catch{}}
