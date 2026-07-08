@@ -3,110 +3,108 @@ import { drawFighter } from './drawFighter';
 import { drawCraters,drawPoisonClouds,drawExplosions,drawTornadoEntities,drawLasers,drawUltimateBeams,drawChainLightning,drawElectricSparks,drawProjectileEntities,drawNewEffects } from './drawEffects';
 import { drawParticles,drawConfetti,drawFloatTexts } from './drawParticles';
 
+type Ctx2D = CanvasRenderingContext2D & { roundRect:(x:number,y:number,w:number,h:number,r:number)=>void };
+
 function drawSlotMachines(ctx: CanvasRenderingContext2D, gs: GameState): void {
   if (!gs.slotMachines.length) return;
-  const s = gs.fieldSize / 500;
+  const s  = gs.fieldSize / 500;
+  const r  = gs.baseR * s; // 캐릭터 반지름 (실제 픽셀)
+  const cx2 = ctx as Ctx2D;
 
   for (const sm of gs.slotMachines) {
-    const W = 210*s, H = 130*s;
-    const x0 = sm.x - W/2, y0 = sm.y - H/2;
-    const elapsed = 2_000 - sm.timer; // 0 → 2000
+    // 도박꾼 캐릭터 위치 추적 (2초 경직이지만 위치 변동 가능성 대비)
+    const attacker = gs.fighters.find(f => f.id === sm.attackerId);
+    if (!attacker) continue;
 
-    // 각 릴 정지 시점 (왼쪽부터 순서대로)
-    const reel1Stopped = elapsed > 600;
-    const reel2Stopped = elapsed > 1_200;
-    const reel3Stopped = elapsed > 1_700;
+    // 크기: 캐릭터 지름의 약 2배
+    const W  = r * 4.2;
+    const H  = r * 2.8;
+    const x0 = attacker.x - W / 2;
+    const y0 = attacker.y - r - H - r * 0.3; // 캐릭터 머리 위에 위치
 
-    // 스핀 중인 릴의 현재 표시 숫자
-    const spinFrame = Math.floor(Date.now() / 80);
-    const d = [
-      reel1Stopped ? sm.digits[0] : spinFrame % 10,
-      reel2Stopped ? sm.digits[1] : (spinFrame + 3) % 10,
-      reel3Stopped ? sm.digits[2] : (spinFrame + 6) % 10,
+    const elapsed = 2_000 - sm.timer;
+
+    // ── 정지 순서: 오른쪽(units) → 가운데(tens) → 왼쪽(hundreds) ──
+    const stoppedRight  = elapsed > 600;
+    const stoppedMid    = elapsed > 1_200;
+    const stoppedLeft   = elapsed > 1_700;
+    const stopped = [stoppedLeft, stoppedMid, stoppedRight]; // [left, mid, right]
+
+    const sf = Math.floor(Date.now() / 80);
+    const d  = [
+      stoppedLeft  ? sm.digits[0] : sf % 10,
+      stoppedMid   ? sm.digits[1] : (sf + 3) % 10,
+      stoppedRight ? sm.digits[2] : (sf + 6) % 10,
     ];
-    const stopped = [reel1Stopped, reel2Stopped, reel3Stopped];
 
     ctx.save();
 
-    // ─ 몸체 ────────────────────────────────────────────────────
+    // ─ 몸체 ───────────────────────────────────────────────────────
     ctx.fillStyle = '#1a0a00';
     ctx.strokeStyle = '#ffd700';
-    ctx.lineWidth = 3.5 * s;
+    ctx.lineWidth = 2 * s;
     ctx.shadowColor = '#ffd700';
-    ctx.shadowBlur = 10 * s;
-    ctx.beginPath();
-    (ctx as CanvasRenderingContext2D & { roundRect: (x:number,y:number,w:number,h:number,r:number)=>void })
-      .roundRect(x0, y0, W, H, 10*s);
+    ctx.shadowBlur = 6 * s;
+    cx2.roundRect(x0, y0, W, H, 5 * s);
     ctx.fill(); ctx.stroke();
     ctx.shadowBlur = 0;
 
-    // ─ 상단 램프 3개 ────────────────────────────────────────────
+    // ─ 상단 램프 3개 ──────────────────────────────────────────────
     const blink = Math.floor(Date.now() / 200) % 2 === 0;
     for (let li = 0; li < 3; li++) {
-      ctx.fillStyle = blink ? '#ff2200' : '#880000';
-      ctx.shadowColor = '#ff0000'; ctx.shadowBlur = blink ? 12*s : 4*s;
+      ctx.fillStyle = blink ? '#ff2200' : '#660000';
+      ctx.shadowColor = '#ff0000'; ctx.shadowBlur = blink ? 7*s : 2*s;
       ctx.beginPath();
-      ctx.arc(x0 + W*(li+1)/4, y0 + 12*s, 6*s, 0, Math.PI*2);
+      ctx.arc(x0 + W*(li+1)/4, y0 + H*0.1, 3*s, 0, Math.PI*2);
       ctx.fill();
     }
     ctx.shadowBlur = 0;
 
-    // ─ SPIN 문구 ────────────────────────────────────────────────
-    ctx.fillStyle = '#ff2200';
-    ctx.font = `bold ${11*s}px 'Segoe UI', Arial`;
-    ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
-    ctx.fillText('SPIN', x0 + W*0.45, y0 + H - 5*s);
-
-    // ─ 숫자 칸 3개 ─────────────────────────────────────────────
-    const cellW = 50*s, cellH = 65*s, gap = 6*s;
-    const totalW = 3*cellW + 2*gap;
-    const cellX0 = x0 + (W - totalW) / 2;
-    const cellY  = y0 + 22*s;
+    // ─ 숫자 칸 3개 ────────────────────────────────────────────────
+    const cGap = W * 0.04;
+    const cW   = (W - 4*cGap) / 3;
+    const cH   = H * 0.58;
+    const cY   = y0 + H * 0.2;
+    const cX0  = x0 + cGap;
 
     for (let ci = 0; ci < 3; ci++) {
-      const cx = cellX0 + ci*(cellW + gap);
-
-      // 칸 배경
+      const cx3 = cX0 + ci*(cW + cGap);
       if (!stopped[ci]) {
-        const pulse = 0.5 + 0.4*Math.sin(Date.now()/80);
-        ctx.fillStyle = `rgba(255,220,0,${pulse*0.3})`;
+        const pulse = 0.4 + 0.35*Math.sin(Date.now()/80);
+        ctx.fillStyle = `rgba(255,220,0,${pulse*0.35})`;
       } else {
         ctx.fillStyle = '#ffffff';
       }
-      ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 2*s;
-      ctx.beginPath();
-      (ctx as CanvasRenderingContext2D & { roundRect: (x:number,y:number,w:number,h:number,r:number)=>void })
-        .roundRect(cx, cellY, cellW, cellH, 4*s);
+      ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 1.5*s;
+      cx2.roundRect(cx3, cY, cW, cH, 3*s);
       ctx.fill(); ctx.stroke();
 
-      // 숫자
-      ctx.font = `bold ${38*s}px monospace`;
+      ctx.font = `bold ${cH*0.68}px monospace`;
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.fillStyle = stopped[ci] ? '#1a1a1a' : '#888';
-      ctx.fillText(String(d[ci]), cx + cellW/2, cellY + cellH/2);
+      ctx.fillStyle = stopped[ci] ? '#1a1a1a' : '#888888';
+      ctx.fillText(String(d[ci]), cx3 + cW/2, cY + cH/2);
     }
 
-    // ─ 손잡이 레버 ─────────────────────────────────────────────
-    const hx = x0 + W + 8*s;
-    ctx.strokeStyle = '#aaaaaa'; ctx.lineWidth = 4*s; ctx.lineCap = 'round';
+    // ─ SPIN 문구 ──────────────────────────────────────────────────
+    ctx.fillStyle = '#ff3300';
+    ctx.font = `bold ${H*0.13}px 'Segoe UI', Arial`;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+    ctx.fillText('SPIN', x0 + W/2, y0 + H - 2*s);
+
+    // ─ 손잡이 레버 ────────────────────────────────────────────────
+    const hx = x0 + W + 2*s;
+    ctx.strokeStyle = '#aaa'; ctx.lineWidth = 2.5*s; ctx.lineCap = 'round';
     ctx.beginPath();
     ctx.moveTo(hx, y0 + H*0.3);
-    ctx.lineTo(hx + 18*s, y0 + H*0.3);
-    ctx.lineTo(hx + 18*s, y0 + H*0.65);
+    ctx.lineTo(hx + 9*s, y0 + H*0.3);
+    ctx.lineTo(hx + 9*s, y0 + H*0.65);
     ctx.stroke();
     ctx.fillStyle = '#cc0000';
-    ctx.shadowColor = '#ff4444'; ctx.shadowBlur = 8*s;
+    ctx.shadowColor = '#ff0000'; ctx.shadowBlur = 5*s;
     ctx.beginPath();
-    ctx.arc(hx + 18*s, y0 + H*0.65, 8*s, 0, Math.PI*2);
+    ctx.arc(hx + 9*s, y0 + H*0.65, 4.5*s, 0, Math.PI*2);
     ctx.fill();
     ctx.shadowBlur = 0;
-
-    // ─ 금색 받침대 ─────────────────────────────────────────────
-    ctx.fillStyle = '#b8860b';
-    ctx.beginPath();
-    (ctx as CanvasRenderingContext2D & { roundRect: (x:number,y:number,w:number,h:number,r:number)=>void })
-      .roundRect(x0 - 5*s, y0 + H, W + 10*s, 10*s, 4*s);
-    ctx.fill();
 
     ctx.restore();
   }
