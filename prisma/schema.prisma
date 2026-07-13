@@ -1,0 +1,142 @@
+// Battle Royale — Prisma schema
+//
+// 설계 원칙
+//  1. 능력 수치(params)는 절대 UPDATE 하지 않는다. 수치가 바뀌면 AbilityVersion
+//     행을 새로 INSERT 한다(불변 버전 이력).
+//  2. 매치 참가자는 능력의 "현재 버전"이 아니라 "그 매치 당시 버전"을
+//     (MatchParticipant.abilityVersionId 로) 직접 참조한다. 밸런스가 나중에
+//     바뀌어도 과거 매치 기록은 왜곡되지 않는다.
+//  3. 능력마다 파라미터 구조가 완전히 다르므로(광역기 radius, 도트형 dot,
+//     도박꾼 확률 테이블 등) params 는 컬럼으로 정규화하지 않고 JSONB 하나로
+//     저장한다. 필터링/집계에 쓰이는 archetype, triggerType 만 진짜 컬럼으로 둔다.
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+/// 능력 발동 방식(필터/집계용 실컬럼)
+enum TriggerType {
+  AUTO
+  COLLISION
+}
+
+/// 능력의 대분류(필터/집계용 실컬럼).
+/// AUTO 계열은 메커니즘별로 여러 타입, COLLISION 계열은 단일 타입.
+enum Archetype {
+  AUTO_BEAM // 관통 레이저/빔 (번개 난사, 저격)
+  AUTO_PROJECTILE // 투사체 발사 (미사일, 구슬, 곡사/서리/딸기 투척, 환영)
+  AUTO_DOT // 지속 범위 피해 (독 안개, 벌집, 그림자 결박)
+  AUTO_AOE // 즉발 팽창 범위기 (전기장)
+  AUTO_HAZARD // 필드를 이동하는 위험체 (회오리, 해일)
+  AUTO_NUKE // 단일 대상 대피해 (필살기)
+  AUTO_TRAP // 설치형 지뢰 (지뢰 매설)
+  COLLISION_STRIKE // 충돌 발동 근접 타격 (모든 collision 능력)
+}
+
+model User {
+  id        String   @id @default(cuid())
+  nickname  String
+  /// 비로그인 게스트 식별자(로그인 계정이면 null)
+  guestId   String?  @unique
+  createdAt DateTime @default(now())
+
+  characters Character[]
+  matches    Match[]     @relation("MatchCreatedBy")
+}
+
+model Character {
+  id       String  @id @default(cuid())
+  /// 소유 유저(익명 로스터 슬롯이면 null 허용)
+  userId   String?
+  name     String
+  imageUrl String?
+  createdAt DateTime @default(now())
+
+  user         User?              @relation(fields: [userId], references: [id])
+  participants MatchParticipant[]
+  wonMatches   Match[]            @relation("MatchWinner")
+
+  @@index([userId])
+}
+
+model Ability {
+  id         String      @id @default(cuid())
+  /// 코드/엔진과 매핑되는 안정적 키 (예: "sniper", "gambler")
+  key        String      @unique
+  label      String
+  archetype  Archetype
+  triggerType TriggerType
+  isActive   Boolean     @default(true)
+  createdAt  DateTime    @default(now())
+
+  versions AbilityVersion[]
+}
+
+/// 능력 수치의 불변 버전 이력. UPDATE 금지 — 값이 바뀌면 새 행 INSERT.
+model AbilityVersion {
+  id            String   @id @default(cuid())
+  abilityId     String
+  version       Int
+  /// 능력별로 형태가 다른 파라미터 뭉치(JSONB). 정규화하지 않는다.
+  params        Json
+  effectiveFrom DateTime @default(now())
+
+  ability      Ability            @relation(fields: [abilityId], references: [id])
+  participants MatchParticipant[]
+
+  @@unique([abilityId, version])
+  @@index([abilityId])
+}
+
+enum MatchStatus {
+  SETUP
+  RUNNING
+  FINISHED
+}
+
+model Match {
+  id                String      @id @default(cuid())
+  /// 매치를 만든 유저(익명 생성 허용)
+  createdBy         String?
+  status            MatchStatus @default(SETUP)
+  /// 매치 설정 스냅샷(참가 인원, 필드 크기, 모드 등). 형태가 유연하므로 JSONB.
+  settings          Json
+  /// 결정론적 재현을 위한 시드
+  seed              String
+  startedAt         DateTime    @default(now())
+  endedAt           DateTime?
+  winnerCharacterId String?
+
+  creator      User?              @relation("MatchCreatedBy", fields: [createdBy], references: [id])
+  winner       Character?         @relation("MatchWinner", fields: [winnerCharacterId], references: [id])
+  participants MatchParticipant[]
+
+  @@index([createdBy])
+}
+
+model MatchParticipant {
+  id       String @id @default(cuid())
+  matchId  String
+  characterId String
+  /// 능력의 "그 매치 당시 버전"을 직접 참조(Ability 가 아니라 AbilityVersion).
+  abilityVersionId String
+  totalDamageDealt Int @default(0)
+  placement        Int?
+
+  match          Match          @relation(fields: [matchId], references: [id])
+  character      Character      @relation(fields: [characterId], references: [id])
+  abilityVersion AbilityVersion @relation(fields: [abilityVersionId], references: [id])
+
+  @@index([matchId])
+  @@index([characterId])
+  @@index([abilityVersionId])
+}
+
+// ── MatchEvent: 향후 확장용(프레임/전투 이벤트 로그). 지금은 생략. ──
+// model MatchEvent { ... }  // TODO: 매치 타임라인/리플레이 기능 추가 시 도입
