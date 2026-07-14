@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(docker info *)",
+      "Bash(open -a Docker)",
+      "Bash(brew list *)",
+      "Bash(npm install *)",
+      "Bash(node -e \"console.log\\('prisma', require\\('prisma/package.json'\\).version\\); console.log\\('client', require\\('@prisma/client/package.json'\\).version\\)\")",
+      "Bash(docker compose *)",
+      "Bash(npx prisma *)",
+      "Bash(npm run *)"
+    ]
+  }
+}
